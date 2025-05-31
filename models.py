@@ -8,7 +8,8 @@ class VehicleUser(db.Model):
     Email_Address = db.Column(db.String , unique = True , nullable = False)
     User_Password = db.Column(db.String ,nullable = False)
     Phone_Number = db.Column(db.String , nullable = True)
-    ParkingReservation = db.relationship("ParkingReservation" , backref ='customer_booking' , cascade ="all , delete")
+    Role = db.Column(db.String ,default="user")
+    user_reservations = db.relationship("ParkingReservation" , backref ='customer_booking' , cascade ="all, delete")
 
 class ParkingLot(db.Model):
     __tablename__ = "ParkingLot"
@@ -17,19 +18,24 @@ class ParkingLot(db.Model):
     Address_name = db.Column(db.String , nullable = False)
     PRICE = db.Column(db.Integer , nullable = False)
     Maximum_Number_Spots = db.Column(db.Integer , nullable = False)
-    availabe_spot = db.relationship("ParkingSpot" , backref = "belong_to_lot" , cascade = "all, delete")
+    availabe_spots = db.relationship("ParkingSpot" , backref = "belong_to_lot" , cascade = "all, delete")
 
 class ParkingSpot(db.Model):
     __tablename__ = "ParkingSpot"
     Spot_Id = db.Column(db.Integer, primary_key=True)
     Current_Status = db.Column(db.String , nullable = False)
-    Lot_Id = db.Column(db.Integer , db.ForeignKey("ParkingLot.id") , nullable = False, )
-    spot_booking = db.relationship("ParkingReservation", backref = "allocated_spot" , cascade="all , delete")
+    Lot_Id = db.Column(db.Integer , db.ForeignKey("ParkingLot.id") , nullable = False)
+    spot_reservations = db.relationship("ParkingReservation", backref="allocated_spot", cascade="all, delete")
+
 
 class ParkingReservation(db.Model):
     __tablename__ = "ParkingReservation"
     Reservation_Id = db.Column(db.Integer ,primary_key=True )
     User_id = db.Column(db.Integer,db.ForeignKey("VehicleUser.User_id"),nullable = False)
-    spot_id_id = db.Column(db.Integer , db.ForeignKey(ParkingSpot.Spot_Id) , nullable = False)
-    Booked_Spot = db.relationship("ParkingSpot" , backref ="Spot_reservation")
+    Spot_Id = db.Column(db.Integer, db.ForeignKey("ParkingSpot.Spot_Id"), nullable=False)  # ADDED: Missing foreign key
+    Vehicle_Number = db.Column(db.String, nullable=False)
+    Entry_Time = db.Column(db.String, nullable=True)
+    Exit_Time = db.Column(db.String, nullable=True)
+    Total_Cost = db.Column(db.Integer, nullable=True)
+ 
     
