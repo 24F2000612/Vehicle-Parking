@@ -7,8 +7,10 @@ class VehicleUser(db.Model):
     Full_Name = db.Column(db.String ,nullable =False )
     Email_Address = db.Column(db.String , unique = True , nullable = False)
     User_Password = db.Column(db.String ,nullable = False)
-    Phone_Number = db.Column(db.String , nullable = True)
+    Phone_Number = db.Column(db.String , nullable = False)
     Role = db.Column(db.String ,default="user")
+    Address = db.Column(db.String, nullable=False)
+    Pin_Code = db.Column(db.String, nullable=False)
     user_reservations = db.relationship("ParkingReservation" , backref ='customer_booking' , cascade ="all, delete")
 
 class ParkingLot(db.Model):

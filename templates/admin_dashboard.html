@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h2>Welcome to Admin Dashboard</h2>
+
+    <h3>All Registered Users</h3>
+    <table>
+        <tr>
+            <th>User ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Role</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.User_id }}</td>
+            <td>{{ user.Login_name }}</td>
+            <td>{{ user.Full_Name }}</td>
+            <td>{{ user.Email_Address }}</td>
+            <td>{{ user.Phone_Number }}</td>
+            <td>{{ user.Role }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>All Parking Spots</h3>
+<p><a href="{{ url_for('add_spot') }}">+ Add New Parking Spot</a></p>
+<table>
+    <tr>
+        <th>Spot ID</th><th>Status</th><th>Lot ID</th><th>Actions</th>
+    </tr>
+    {% for spot in spots %}
+    <tr>
+        <td>{{ spot.Spot_Id }}</td>
+        <td>{{ spot.Current_Status }}</td>
+        <td>{{ spot.Lot_Id }}</td>
+        <td>
+            <form action="{{ url_for('delete_spot', spot_id=spot.Spot_Id) }}" method="POST" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+    <h3>All Parking Lots</h3>
+<p><a href="{{ url_for('add_lot') }}">+ Add New Parking Lot</a></p>
+<table>
+    <tr>
+        <th>Lot ID</th><th>Location Name</th><th>Address</th><th>Price</th><th>Max Spots</th><th>Actions</th>
+    </tr>
+    {% for lot in lots %}
+    <tr>
+        <td>{{ lot.id }}</td>
+        <td>{{ lot.Location_Name }}</td>
+        <td>{{ lot.Address_name }}</td>
+        <td>{{ lot.PRICE }}</td>
+        <td>{{ lot.Maximum_Number_Spots }}</td>
+        <td>
+            <a href="{{ url_for('edit_lot', lot_id=lot.id) }}">Edit</a> |
+            <form action="{{ url_for('delete_lot', lot_id=lot.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this lot?');">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<h3>All Reservations</h3>
+<table>
+    <tr>
+        <th>Reservation ID</th><th>User ID</th><th>Spot ID</th><th>Vehicle Number</th><th>Entry Time</th><th>Exit Time</th><th>Total Cost</th>
+    </tr>
+    {% for reservation in reservations %}
+    <tr>
+        <td>{{ reservation.Reservation_Id }}</td>
+        <td>{{ reservation.User_id }}</td>
+        <td>{{ reservation.Spot_Id }}</td>
+        <td>{{ reservation.Vehicle_Number }}</td>
+        <td>{{ reservation.Entry_Time }}</td>
+        <td>{{ reservation.Exit_Time }}</td>
+        <td>{{ reservation.Total_Cost }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+    
+</body>
+</html>

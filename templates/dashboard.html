@@ -3,17 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>User Dashboard</title>
 </head>
 <body>
-     <h1>Welcome {{ user.Full_Name }}!</h1>
-    
+    <h1>Welcome {{ user.Full_Name }}!</h1>
     <p><strong>Username:</strong> {{ user.Login_name }}</p>
     <p><strong>Email:</strong> {{ user.Email_Address }}</p>
     <p><strong>Phone:</strong> {{ user.Phone_Number }}</p>
     <p><strong>Role:</strong> {{ user.Role }}</p>
-    
-    <p><a href="/logout">Logout</a></p>
+
+    <h2>Available Parking Lots</h2>
+<ul>
+{% for lot in lots %}
+    <li>
+        <strong>{{ lot.Location_Name }}</strong> ({{ lot.Address_name }}) - ₹{{ lot.PRICE }}
+        <ul>
+            {% for spot in lot.availabe_spots %}
+                {% if spot.Current_Status == 'Available' %}
+                    <li>
+                        Spot {{ spot.Spot_Id }}
+                        <form action="{{ url_for('reserve_spot', spot_id=spot.Spot_Id) }}" method="post" style="display:inline;">
+                            <input type="text" name="Vehicle_Number" placeholder="Vehicle Number" required>
+                            <button type="submit">Book</button>
+                        </form>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </li>
+{% endfor %}
+</ul>
+
+<h2>Your Booked Spots</h2>
+<table>
+    <tr>
+        <th>Reservation ID</th><th>Spot ID</th><th>Vehicle Number</th><th>Action</th>
+    </tr>
+    {% for reservation in user.user_reservations %}
+    <tr>
+        <td>{{ reservation.Reservation_Id }}</td>
+        <td>{{ reservation.Spot_Id }}</td>
+        <td>{{ reservation.Vehicle_Number }}</td>
+        <td>
+            <form action="{{ url_for('release_spot', reservation_id=reservation.Reservation_Id) }}" method="POST" style="display:inline;">
+                <button type="submit">Release</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<p><a href="{{ url_for('logout') }}">Logout</a></p>
     
 </body>
 </html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8" />
+    <title>Edit Parking Lot</title>
+</head>
+<body>
+    <h2>Edit Parking Lot</h2>
+    
+    <form method="POST">
+        <div>
+            <label for="Location_Name">Location Name:</label><br />
+            <input type="text" id="Location_Name" name="Location_Name" value="{{ lot.Location_Name }}" required />
+        </div>
+
+        <div>
+            <label for="Address_name">Address:</label><br />
+            <textarea id="Address_name" name="Address_name" rows="3" cols="50" required>{{ lot.Address_name }}</textarea>
+        </div>
+
+        <div>
+            <label for="PRICE">Price (₹):</label><br />
+            <input
+                type="number"
+                id="PRICE"
+                name="PRICE"
+                min="1"
+                value="{{ lot.PRICE or 50 }}"
+                required
+            />
+        </div>
+
+        <div>
+            <label for="Maximum_Number_Spots">Maximum Number of Spots:</label><br />
+            <input
+                type="number"
+                id="Maximum_Number_Spots"
+                name="Maximum_Number_Spots"
+                min="1"
+                value="{{ lot.Maximum_Number_Spots or 10 }}"
+                required
+            />
+        </div>
+
+        <button type="submit">Update Parking Lot</button>
+    </form>
+
+    <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+</body>
+</html>

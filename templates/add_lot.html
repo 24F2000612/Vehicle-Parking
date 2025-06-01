@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Parking Lot</title>
+</head>
+<body>
+    <h2>Add New Parking Lot</h2>
+    <form method="POST">
+        <label>Location Name:</label><br>
+        <input type="text" name="Location_Name" required><br>
+        <label>Address:</label><br>
+        <input type="text" name="Address_name" required><br>
+        <label>Price:</label><br>
+        <input type="number" name="PRICE" required><br>
+        <label>Maximum Number of Spots:</label><br>
+        <input type="number" name="Maximum_Number_Spots" required><br>
+        <button type="submit">Add Parking Lot</button>
+    </form>
+    <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+</body>
+</html>

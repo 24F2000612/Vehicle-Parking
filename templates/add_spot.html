@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>Add New Parking Spot</h2>
+    <form method="POST">
+        <label>Select Lot:</label><br>
+        <select name="Lot_Id" required>
+            {% for lot in lots %}
+                <option value="{{ lot.id }}">{{ lot.Location_Name }}</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="submit">Add Spot</button>
+    </form>
+    <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+</body>
+</html>
