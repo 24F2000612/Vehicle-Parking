@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>Book the Parking Spot</h2>
+<form method="POST" action="{{ url_for('reserve_spot', spot_id=spots[0].Spot_Id if spots else 0) }}">
+    <p><strong>Spot_ID:</strong> {{ spots[0].Spot_Id if spots else 'No spots available' }}</p>
+    <p><strong>Lot_ID:</strong> {{ lot.id }}</p>
+    <p><strong>User ID:</strong> {{ session.user_id }}</p>
+    <label>Vehicle Number:</label>
+    <input type="text" name="Vehicle_Number" required>
+    <button type="submit">Reserve</button>
+    <button type="button" onclick="history.back()">Cancel</button>
+</form>
+
+</body>
+</html>

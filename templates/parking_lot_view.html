@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h3>{{ lot.Location_Name }} - Parking Layout</h3>
+<div class="parking-grid">
+    {% for spot in lot.available_spots %}
+    <div class="parking-spot {{ 'occupied' if spot.Current_Status == 'O' else 'available' }}">
+        {{ spot.Spot_Id }}
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.parking-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.parking-spot { border: 2px solid #ccc; padding: 10px; text-align: center; }
+.available { background: lightgreen; }
+.occupied { background: lightcoral; }
+</style>
+
+</body>
+</html>

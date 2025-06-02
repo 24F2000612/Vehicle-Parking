@@ -19,7 +19,7 @@
         <strong>{{ lot.Location_Name }}</strong> ({{ lot.Address_name }}) - ₹{{ lot.PRICE }}
         <ul>
             {% for spot in lot.availabe_spots %}
-                {% if spot.Current_Status == 'Available' %}
+                {% if spot.Current_Status == 'A' %}
                     <li>
                         Spot {{ spot.Spot_Id }}
                         <form action="{{ url_for('reserve_spot', spot_id=spot.Spot_Id) }}" method="post" style="display:inline;">
@@ -37,22 +37,57 @@
 <h2>Your Booked Spots</h2>
 <table>
     <tr>
-        <th>Reservation ID</th><th>Spot ID</th><th>Vehicle Number</th><th>Action</th>
+        <th>Reservation ID</th>
+        <th>Spot ID</th>
+        <th>Vehicle Number</th>
+        <th>Entry Time</th>
+        <th>Exit Time</th>
+        <th>Total Cost</th>
+        <th>Action</th>
     </tr>
     {% for reservation in user.user_reservations %}
     <tr>
         <td>{{ reservation.Reservation_Id }}</td>
         <td>{{ reservation.Spot_Id }}</td>
         <td>{{ reservation.Vehicle_Number }}</td>
+        <td>{{ reservation.Entry_Time }}</td>
+        <td>{{ reservation.Exit_Time }}</td>
         <td>
+            {% if reservation.Total_Cost %}₹{{ reservation.Total_Cost }}{% else %}-{% endif %}
+        </td>
+        <td>
+            {% if not reservation.Exit_Time %}
             <form action="{{ url_for('release_spot', reservation_id=reservation.Reservation_Id) }}" method="POST" style="display:inline;">
                 <button type="submit">Release</button>
             </form>
+            {% endif %}
         </td>
     </tr>
     {% endfor %}
 </table>
-<p><a href="{{ url_for('logout') }}">Logout</a></p>
+<h2>Recent Parking History</h2>
+<table>
+    <tr>
+        <th>ID</th><th>Location</th><th>Vehicle No</th><th>Timestamp</th><th>Action</th>
+    </tr>
+    {% for reservation in user.user_reservations[-5:] %}
+    <tr>
+        <td>{{ reservation.Reservation_Id }}</td>
+        <td>{{ reservation.allocated_spot.belong_to_lot.Location_Name }}</td>
+        <td>{{ reservation.Vehicle_Number }}</td>
+        <td>{{ reservation.Entry_Time.strftime('%d/%m/%Y %H:%M') if reservation.Entry_Time }}</td>
+        <td>
+            {% if not reservation.Exit_Time %}
+                <button class="release-btn">Release</button>
+            {% else %}
+                <span class="completed">Parked Out</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+
     
 </body>
 </html>

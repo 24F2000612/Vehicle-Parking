@@ -33,7 +33,17 @@
     {% for spot in spots %}
     <tr>
         <td>{{ spot.Spot_Id }}</td>
-        <td>{{ spot.Current_Status }}</td>
+        <td>
+            {% if spot.Current_Status == 'A' %}
+            Available
+             {% else %}
+             Occupied
+            {% endif %}
+        </td>
+
+    
+            
+
         <td>{{ spot.Lot_Id }}</td>
         <td>
             <form action="{{ url_for('delete_spot', spot_id=spot.Spot_Id) }}" method="POST" style="display:inline;">
@@ -84,6 +94,14 @@
     </tr>
     {% endfor %}
 </table>
+<h3>Summary</h3>
+<ul>
+    <li>Total Lots: {{ lots|length }}</li>
+    <li>Total Spots: {{ spots|length }}</li>
+    <li>Total Reservations: {{ reservations|length }}</li>
+    <li>Total Revenue: ₹{{ reservations|map(attribute='Total_Cost')|reject('none')|sum }}</li>
+
+</ul>
 
     
 </body>

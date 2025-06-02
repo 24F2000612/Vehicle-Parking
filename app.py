@@ -1,5 +1,6 @@
 from flask import Flask , render_template , request , flash ,redirect , url_for , session 
 from models import db, VehicleUser, ParkingLot, ParkingSpot, ParkingReservation
+from datetime import datetime
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vehicle_park.db'
@@ -178,15 +179,16 @@ def reserve_spot(spot_id):
         User_id=session['user_id'],
         Spot_Id=spot.Spot_Id,
         Vehicle_Number=vehicle_number,
-        Entry_Time=None,  # You can add logic for time
+        Entry_Time=datetime.now(),  # Save as datetime object, not string
         Exit_Time=None,
         Total_Cost=None
     )
-    spot.Current_Status = 'Occupied'
+    spot.Current_Status = 'O'
     db.session.add(reservation)
     db.session.commit()
     flash('Spot booked successfully!', 'success')
     return redirect(url_for('dashboard'))
+
 
 @app.route('/add_spot', methods=['GET', 'POST'])
 def add_spot():
@@ -198,7 +200,7 @@ def add_spot():
     lots = ParkingLot.query.all()
     if request.method == 'POST':
         Lot_Id = request.form['Lot_Id']
-        Current_Status = 'Available'
+        Current_Status = 'A'
         new_spot = ParkingSpot(Lot_Id=Lot_Id, Current_Status=Current_Status)
         db.session.add(new_spot)
         db.session.commit()
@@ -219,15 +221,55 @@ def delete_spot(spot_id):
     flash("Parking spot deleted successfully.", "success")
     return redirect(url_for('admin_dashboard'))
 
+from datetime import datetime
+
 @app.route('/release_spot/<int:reservation_id>', methods=['POST'])
 def release_spot(reservation_id):
     reservation = ParkingReservation.query.get_or_404(reservation_id)
     spot = ParkingSpot.query.get(reservation.Spot_Id)
-    spot.Current_Status = 'Available'
-    db.session.delete(reservation)
+    reservation.Exit_Time = datetime.now()  # <-- Add this
+
+    # Calculate duration and cost
+    # Calculate duration and cost
+    entry = reservation.Entry_Time  # Already a datetime object
+    exit = reservation.Exit_Time    # Already a datetime object
+    duration_hours = max(1, int((exit - entry).total_seconds() // 3600))
+
+    lot = ParkingLot.query.get(spot.Lot_Id)
+    reservation.Total_Cost = duration_hours * lot.PRICE  # <-- Add this
+    spot.Current_Status = 'A'
     db.session.commit()
     flash('Spot released!', 'success')
     return redirect(url_for('dashboard'))
+
+@app.route('/search_parking', methods=['GET', 'POST'])
+def search_parking():
+    if request.method == 'POST':
+        search_location = request.form.get('search_location')
+        lots = ParkingLot.query.filter(ParkingLot.Location_Name.contains(search_location)).all()
+    else:
+        lots = ParkingLot.query.all()
+    return render_template('search_parking.html', lots=lots)
+
+@app.route('/occupied_spot_details/<int:spot_id>')
+def occupied_spot_details(spot_id):
+    spot = ParkingSpot.query.get_or_404(spot_id)
+    if spot.Current_Status == 'O':
+        reservation = ParkingReservation.query.filter_by(Spot_Id=spot_id, Exit_Time=None).first()
+        return render_template('occupied_spot_details.html', spot=spot, reservation=reservation)
+    else:
+        flash('Spot is not occupied', 'info')
+        return redirect(url_for('admin_dashboard'))
+    
+@app.route('/book_spot/<int:lot_id>')
+def book_spot(lot_id):
+    lot = ParkingLot.query.get_or_404(lot_id)
+    available_spots = [spot for spot in lot.available_spots if spot.Current_Status == 'A']
+    return render_template('book_spot.html', lot=lot, spots=available_spots)
+
+
+
+
 
 
 

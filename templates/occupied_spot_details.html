@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>Occupied Parking Spot Details</h2>
+    <p><strong>ID:</strong> {{ spot.Spot_Id }}</p>
+    <p><strong>Status:</strong> Occupied</p>
+    <p><strong>Customer ID:</strong> {{ reservation.customer_booking.User_id }}</p>
+    <p><strong>Vehicle Number:</strong> {{ reservation.Vehicle_Number }}</p>
+    <p><strong>Date/Time of Parking:</strong> {{ reservation.Entry_Time.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p><strong>Exit Parking Cost:</strong> ₹{{ reservation.Total_Cost or 'TBD' }}</p>
+    <button onclick="window.close()">Close</button>
+
+</body>
+</html>

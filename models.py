@@ -25,10 +25,9 @@ class ParkingLot(db.Model):
 class ParkingSpot(db.Model):
     __tablename__ = "ParkingSpot"
     Spot_Id = db.Column(db.Integer, primary_key=True)
-    Current_Status = db.Column(db.String , nullable = False)
+    Current_Status = db.Column(db.String(1), nullable=False, default='A')  
     Lot_Id = db.Column(db.Integer , db.ForeignKey("ParkingLot.id") , nullable = False)
     spot_reservations = db.relationship("ParkingReservation", backref="allocated_spot", cascade="all, delete")
-
 
 class ParkingReservation(db.Model):
     __tablename__ = "ParkingReservation"
@@ -36,8 +35,8 @@ class ParkingReservation(db.Model):
     User_id = db.Column(db.Integer,db.ForeignKey("VehicleUser.User_id"),nullable = False)
     Spot_Id = db.Column(db.Integer, db.ForeignKey("ParkingSpot.Spot_Id"), nullable=False)  # ADDED: Missing foreign key
     Vehicle_Number = db.Column(db.String, nullable=False)
-    Entry_Time = db.Column(db.String, nullable=True)
-    Exit_Time = db.Column(db.String, nullable=True)
-    Total_Cost = db.Column(db.Integer, nullable=True)
+    Entry_Time = db.Column(db.DateTime, nullable=True)
+    Exit_Time = db.Column(db.DateTime, nullable=True)
+    Total_Cost = db.Column(db.Float, nullable=True)
  
     
