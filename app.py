@@ -1,6 +1,9 @@
 from flask import Flask , render_template , request , flash ,redirect , url_for , session 
 from models import db, VehicleUser, ParkingLot, ParkingSpot, ParkingReservation
 from datetime import datetime
+import matplotlib.pyplot as plt
+import io
+import base64
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vehicle_park.db'
@@ -12,68 +15,133 @@ db.init_app(app)
 def home():
     return render_template('home.html')
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
+@app.route('/user_register', methods=['GET', 'POST'])
+def user_register():
     if request.method == 'POST':
-        Login_name = request.form.get('Login_name')
-        Full_Name = request.form.get('Full_Name')
-        Email_Address = request.form.get('Email_Address')
-        User_Password = request.form.get('User_Password')
-        Phone_Number = request.form.get('Phone_Number')
-        Address = request.form.get('Address')
-        Pin_Code = request.form.get('Pin_Code')
+        Login_name = request.form['Login_name']
+        Full_Name = request.form['Full_Name']
+        Email_Address = request.form['Email_Address']  # Make sure this field exists
+        Phone_Number = request.form['Phone_Number']    # Make sure this field exists
+        User_Password = request.form['User_Password']
+        Address = request.form['Address']
+        Pin_Code = request.form['Pin_Code']
+
+        # Check if user already exists
+        existing_user = VehicleUser.query.filter_by(Email_Address=Email_Address).first()
+        if existing_user:
+            flash('Email already registered!', 'danger')
+            return redirect(url_for('user_register'))
+
         new_user = VehicleUser(
             Login_name=Login_name,
             Full_Name=Full_Name,
             Email_Address=Email_Address,
-            User_Password=User_Password,
             Phone_Number=Phone_Number,
+            User_Password=User_Password,  # Simple password for now
             Address=Address,
             Pin_Code=Pin_Code,
             Role='user'
         )
+        
         try:
             db.session.add(new_user)
             db.session.commit()
-            flash('Registration successful!', 'success')
-            return redirect(url_for('login'))
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('user_login'))
         except Exception as e:
             db.session.rollback()
             flash(f'Registration failed: {str(e)}', 'danger')
-            return redirect(url_for('register'))
+    
     return render_template('user_registration.html')
 
 
-@app.route('/login' ,methods=['GET','POST'])
-def login():
-    if request.method=='POST':
+
+@app.route('/user_login', methods=['GET', 'POST'])
+def user_login():
+    if request.method == 'POST':
         Email_Address = request.form['Email_Address']
         User_Password = request.form['User_Password']
-        user = VehicleUser.query.filter_by(Email_Address=Email_Address,User_Password=User_Password).first()
-        if user:
+
+        # Find user by email
+        user = VehicleUser.query.filter_by(Email_Address=Email_Address).first()
+
+        # Check if user exists and password matches
+        if user and user.User_Password == User_Password:
+            # Store user info in session
             session['user_id'] = user.User_id
+            session['user_role'] = user.Role
             session['user_name'] = user.Full_Name
-            flash("Login Successful","success")
-            # Redirect admin to admin dashboard, regular users to user dashboard
+            
+            flash('Login successful!', 'success')
+            
+            # Redirect based on role
             if user.Role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
                 return redirect(url_for('dashboard'))
-        
         else:
-            flash("Invalid credentials" , "Danger")
-            return redirect(url_for('login'))
+            flash('Invalid email or password', 'danger')
+    
     return render_template('user_login.html')
 
-@app.route('/dashboard')
+
+
+
+@app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
         flash('Please login first', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('user_login'))
     
     user = VehicleUser.query.get(session['user_id'])
+    if not user:
+        session.clear()
+        flash('Invalid session', 'danger')
+        return redirect(url_for('user_login'))
+    
     lots = ParkingLot.query.all()
-    return render_template('dashboard.html', user=user ,lots=lots)
+    search_query = ""
+    
+    if request.method == 'POST':
+        search_query = request.form.get('search_location', '').strip()
+        if search_query:
+            lots = ParkingLot.query.filter(
+                (ParkingLot.Location_Name.ilike(f"%{search_query}%")) | 
+                (ParkingLot.Address_name.ilike(f"%{search_query}%"))
+            ).all()
+
+    # Generate chart for user
+    reservations = user.user_reservations
+    chart_url = None
+    
+    if reservations:
+        lot_counter = {}
+        for res in reservations:
+            lot_name = res.allocated_spot.belong_to_lot.Location_Name
+            lot_counter[lot_name] = lot_counter.get(lot_name, 0) + 1
+        
+        lot_names = list(lot_counter.keys())
+        lot_counts = list(lot_counter.values())
+        
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.bar(lot_names, lot_counts, color='skyblue')
+        ax.set_title('Your Bookings by Location')
+        ax.set_xlabel('Location')
+        ax.set_ylabel('Bookings')
+        plt.xticks(rotation=30)
+        
+        img = io.BytesIO()
+        fig.tight_layout()
+        fig.savefig(img, format='png')
+        img.seek(0)
+        chart_url = base64.b64encode(img.getvalue()).decode()
+        plt.close(fig)
+    
+    return render_template('dashboard.html', user=user, lots=lots, search_query=search_query, chart_url=chart_url)
+
+
+
+
 
 @app.route('/logout')
 def logout():
@@ -81,41 +149,115 @@ def logout():
     flash('Logged out successfully', 'info')
     return redirect(url_for('home'))
 
-@app.route('/admin_dashboard')
+@app.route('/admin_dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
-     # Check if user is logged in
+    # Check if user is logged in
     if 'user_id' not in session:
         flash('Please log in first', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('user_login'))
     
     # Check if user is admin
     current_user = VehicleUser.query.get(session['user_id'])
     if not current_user or current_user.Role != 'admin':
         flash('Admin access required', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('user_login'))
+    
+    # Handle search functionality
+    search_query = request.form.get('search_query', '')
+    search_type = request.form.get('search_type', 'location')
+    
+    # Get all data
     users = VehicleUser.query.all()
     lots = ParkingLot.query.all()
     spots = ParkingSpot.query.all()
     reservations = ParkingReservation.query.all()
     
+    # Apply search filter
+    if request.method == 'POST' and search_query:
+        if search_type == 'location':
+            lots = ParkingLot.query.filter(
+                ParkingLot.Location_Name.contains(search_query)
+            ).all()
+        elif search_type == 'user':
+            users = VehicleUser.query.filter(
+                VehicleUser.Full_Name.contains(search_query)
+            ).all()
+        elif search_type == 'spot':
+            try:
+                spot_id = int(search_query)
+                spots = ParkingSpot.query.filter_by(Spot_Id=spot_id).all()
+            except ValueError:
+                flash('Invalid spot ID', 'danger')
+    
     return render_template('admin_dashboard.html', 
+                         user=current_user,
                          users=users, 
                          lots=lots, 
                          spots=spots, 
-                         reservations=reservations)
+                         reservations=reservations,
+                         search_query=search_query)
 
-@app.route('/vehicle_edit_lot/<int:lot_id>', methods=['GET', 'POST'])
+
+@app.route('/edit_lot/<int:lot_id>', methods=['GET', 'POST'])
 def edit_lot(lot_id):
+    user_id = session.get('user_id')
+    user = VehicleUser.query.get(user_id)
+    if not user or user.Role != 'admin':
+        flash("Admin access required", "danger")
+        return redirect(url_for('user_login'))
+    
     lot = ParkingLot.query.get_or_404(lot_id)
+    
     if request.method == 'POST':
-        lot.Location_Name = request.form['Location_Name']
-        lot.Address_name = request.form['Address_name']
-        lot.PRICE = request.form['PRICE']
-        lot.Maximum_Number_Spots = request.form['Maximum_Number_Spots']
-        db.session.commit()
-        flash('Parking lot updated!', 'success')
-        return redirect(url_for('admin_dashboard'))
+        try:
+            lot.Location_Name = request.form['Location_Name']
+            lot.Address_name = request.form['Address_name']
+            lot.PRICE = int(request.form['PRICE'])
+            new_max_spots = int(request.form['Maximum_Number_Spots'])
+            
+            if lot.PRICE <= 0:
+                flash('Price must be positive', 'danger')
+                return render_template('vehicle_edit_lot.html', lot=lot)
+                
+            if new_max_spots <= 0:
+                flash('Number of spots must be positive', 'danger')
+                return render_template('vehicle_edit_lot.html', lot=lot)
+            
+            current_spots = len(lot.available_spots)
+            lot.Maximum_Number_Spots = new_max_spots
+            
+            if new_max_spots > current_spots:
+                for i in range(current_spots + 1, new_max_spots + 1):
+                    spot = ParkingSpot(
+                        Lot_Id=lot.id,
+                        Current_Status='A',
+                        Spot_Number=i
+                    )
+                    db.session.add(spot)
+            
+            elif new_max_spots < current_spots:
+                spots_to_remove = ParkingSpot.query.filter_by(
+                    Lot_Id=lot.id, 
+                    Current_Status='A'
+                ).offset(new_max_spots).all()
+                
+                for spot in spots_to_remove:
+                    db.session.delete(spot)
+            
+            db.session.commit()
+            flash('Parking lot updated successfully!', 'success')
+            return redirect(url_for('admin_dashboard'))
+            
+        except ValueError:
+            flash('Invalid number format', 'danger')
+            return render_template('vehicle_edit_lot.html', lot=lot)
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Update failed: {str(e)}', 'danger')
+    
     return render_template('vehicle_edit_lot.html', lot=lot)
+
+
 
 @app.route('/add_lot', methods=['GET', 'POST'])
 def add_lot():
@@ -126,24 +268,51 @@ def add_lot():
         return redirect(url_for('home'))
 
     if request.method == 'POST':
-        print("Form submitted!")  # Debug
-        Location_Name = request.form['Location_Name']
-        Address_name = request.form['Address_name']
-        PRICE = request.form['PRICE']
-        Maximum_Number_Spots = request.form['Maximum_Number_Spots']
-        print("Form data:", Location_Name, Address_name, PRICE, Maximum_Number_Spots)  # Debug
-        new_lot = ParkingLot(
-            Location_Name=Location_Name,
-            Address_name=Address_name,
-            PRICE=PRICE,
-            Maximum_Number_Spots=Maximum_Number_Spots
-        )
-        db.session.add(new_lot)
-        db.session.commit()
-        print("Lot added to DB!")  # Debug
-        flash('Parking lot added successfully!', 'success')
-        return redirect(url_for('admin_dashboard'))
+        try:
+            Location_Name = request.form['Location_Name']
+            Address_name = request.form['Address_name']
+            PRICE = int(request.form['PRICE'])
+            Maximum_Number_Spots = int(request.form['Maximum_Number_Spots'])
+            
+            if PRICE <= 0:
+                flash('Price must be positive', 'danger')
+                return render_template('add_lot.html')
+                
+            if Maximum_Number_Spots <= 0:
+                flash('Number of spots must be positive', 'danger')
+                return render_template('add_lot.html')
+            
+            new_lot = ParkingLot(
+                Location_Name=Location_Name,
+                Address_name=Address_name,
+                PRICE=PRICE,
+                Maximum_Number_Spots=Maximum_Number_Spots
+            )
+            db.session.add(new_lot)
+            db.session.flush()
+            
+            for i in range(1, Maximum_Number_Spots + 1):
+                spot = ParkingSpot(
+                    Lot_Id=new_lot.id,
+                    Current_Status='A',
+                    Spot_Number=i
+                )
+                db.session.add(spot)
+            
+            db.session.commit()
+            flash('Parking lot and spots created successfully!', 'success')
+            return redirect(url_for('admin_dashboard'))
+            
+        except ValueError:
+            flash('Invalid number format', 'danger')
+            return render_template('add_lot.html')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Creation failed: {str(e)}', 'danger')
+    
     return render_template('add_lot.html')
+
+
 
 @app.route('/delete_lot/<int:lot_id>', methods=['POST'])
 def delete_lot(lot_id):
@@ -152,42 +321,66 @@ def delete_lot(lot_id):
     user_id = session.get('user_id')
     user = VehicleUser.query.get(user_id)
     if not user or user.Role != 'admin':
-        flash("You don't have permission to delete this lot.", "danger")
-        return redirect(url_for('home'))
+        flash("Admin access required", "danger")
+        return redirect(url_for('user_login'))
 
-    # Check if lot has any spots before deleting
-    if lot.availabe_spots and len(lot.availabe_spots) > 0:
-        flash("Cannot delete lot. It has parking spots.", "warning")
+    occupied_spots = ParkingSpot.query.filter_by(
+        Lot_Id=lot_id, 
+        Current_Status='O'
+    ).count()
+    
+    if occupied_spots > 0:
+        flash("Cannot delete lot. Some spots are occupied.", "warning")
         return redirect(url_for('admin_dashboard'))
 
-    db.session.delete(lot)
-    db.session.commit()
-    flash("Parking lot deleted successfully.", "success")
+    try:
+        ParkingSpot.query.filter_by(Lot_Id=lot_id).delete()
+        db.session.delete(lot)
+        db.session.commit()
+        flash("Parking lot deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Deletion failed: {str(e)}", "danger")
+    
     return redirect(url_for('admin_dashboard'))
+
+
 
 @app.route('/reserve_spot/<int:spot_id>', methods=['POST'])
 def reserve_spot(spot_id):
     if 'user_id' not in session:
         flash('Please login first', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('user_login'))
+    
     spot = ParkingSpot.query.get_or_404(spot_id)
-    if spot.Current_Status != 'Available':
+    if spot.Current_Status != 'A':
         flash('Spot not available!', 'danger')
         return redirect(url_for('dashboard'))
-    vehicle_number = request.form['Vehicle_Number']
-    reservation = ParkingReservation(
-        User_id=session['user_id'],
-        Spot_Id=spot.Spot_Id,
-        Vehicle_Number=vehicle_number,
-        Entry_Time=datetime.now(),  # Save as datetime object, not string
-        Exit_Time=None,
-        Total_Cost=None
-    )
-    spot.Current_Status = 'O'
-    db.session.add(reservation)
-    db.session.commit()
-    flash('Spot booked successfully!', 'success')
+    
+    Vehicle_Number = request.form.get('Vehicle_Number')
+    if not Vehicle_Number:
+        flash('Vehicle number is required!', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        reservation = ParkingReservation(
+            User_id=session['user_id'],
+            Spot_Id=spot.Spot_Id,
+            Vehicle_Number=Vehicle_Number,
+            Entry_Time=datetime.now(),
+            Exit_Time=None,
+            Total_Cost=None
+        )
+        spot.Current_Status = 'O'
+        db.session.add(reservation)
+        db.session.commit()
+        flash('Spot booked successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Booking failed: {str(e)}', 'danger')
+    
     return redirect(url_for('dashboard'))
+
 
 
 @app.route('/add_spot', methods=['GET', 'POST'])
@@ -197,31 +390,76 @@ def add_spot():
     if not user or user.Role != 'admin':
         flash("Only admin can add parking spots.", "danger")
         return redirect(url_for('home'))
+    
     lots = ParkingLot.query.all()
+    
     if request.method == 'POST':
-        Lot_Id = request.form['Lot_Id']
-        Current_Status = 'A'
-        new_spot = ParkingSpot(Lot_Id=Lot_Id, Current_Status=Current_Status)
-        db.session.add(new_spot)
-        db.session.commit()
-        flash('Parking spot added!', 'success')
-        return redirect(url_for('admin_dashboard'))
+        try:
+            Lot_Id = int(request.form['Lot_Id'])
+            lot = ParkingLot.query.get(Lot_Id)
+            
+            if not lot:
+                flash("Invalid parking lot selected", "danger")
+                return render_template('add_spot.html', lots=lots)
+            
+            # Get next spot number
+            existing_spots = ParkingSpot.query.filter_by(Lot_Id=Lot_Id).count()
+            next_spot_number = existing_spots + 1
+            
+            new_spot = ParkingSpot(
+                Lot_Id=Lot_Id, 
+                Current_Status='A',
+                Spot_Number=next_spot_number  # Add this missing field
+            )
+            db.session.add(new_spot)
+            db.session.commit()
+            flash('Parking spot added!', 'success')
+            return redirect(url_for('admin_dashboard'))
+            
+        except ValueError:
+            flash('Invalid lot ID', 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Failed to add spot: {str(e)}', 'danger')
+    
     return render_template('add_spot.html', lots=lots)
+
 
 @app.route('/delete_spot/<int:spot_id>', methods=['POST'])
 def delete_spot(spot_id):
     spot = ParkingSpot.query.get_or_404(spot_id)
     user_id = session.get('user_id')
     user = VehicleUser.query.get(user_id)
+    
     if not user or user.Role != 'admin':
-        flash("You don't have permission to delete this spot.", "danger")
-        return redirect(url_for('home'))
-    db.session.delete(spot)
-    db.session.commit()
-    flash("Parking spot deleted successfully.", "success")
+        flash("Admin access required", "danger")
+        return redirect(url_for('user_login'))
+    
+    # Professor's requirement: Only delete if spot is empty
+    if spot.Current_Status == 'O':
+        flash("Cannot delete occupied spot", "warning")
+        return redirect(url_for('admin_dashboard'))
+    
+    # Check for active reservations
+    active_reservations = ParkingReservation.query.filter_by(
+        Spot_Id=spot_id, Exit_Time=None
+    ).count()
+    
+    if active_reservations > 0:
+        flash("Cannot delete spot with active reservations", "warning")
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        db.session.delete(spot)
+        db.session.commit()
+        flash("Parking spot deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Deletion failed: {str(e)}", "danger")
+    
     return redirect(url_for('admin_dashboard'))
 
-from datetime import datetime
+
 
 @app.route('/release_spot/<int:reservation_id>', methods=['POST'])
 def release_spot(reservation_id):
@@ -267,6 +505,78 @@ def book_spot(lot_id):
     available_spots = [spot for spot in lot.available_spots if spot.Current_Status == 'A']
     return render_template('book_spot.html', lot=lot, spots=available_spots)
 
+@app.route('/summary_charts')
+def summary_charts():
+    if 'user_id' not in session:
+        flash('Please login first', 'warning')
+        return redirect(url_for('user_login'))
+    
+    current_user = VehicleUser.query.get(session['user_id'])
+    if not current_user or current_user.Role != 'admin':
+        flash('Admin access required', 'danger')
+        return redirect(url_for('user_login'))
+
+    users = VehicleUser.query.filter_by(Role='user').all()
+    usernames = [user.Login_name for user in users]
+    reservation_counts = [len(user.user_reservations) for user in users]
+
+    fig1, ax1 = plt.subplots()
+    ax1.bar(usernames, reservation_counts, color='lightblue')
+    ax1.set_title('Total Reservations per User')
+    ax1.set_xlabel('Users')
+    ax1.set_ylabel('Reservations')
+    plt.xticks(rotation=45)
+    img1 = io.BytesIO()
+    fig1.tight_layout()
+    fig1.savefig(img1, format='png')
+    img1.seek(0)
+    plot_url1 = base64.b64encode(img1.getvalue()).decode()
+    plt.close(fig1)
+
+    spots = ParkingSpot.query.all()
+    available_spots = sum(1 for spot in spots if spot.Current_Status == 'A')
+    occupied_spots = sum(1 for spot in spots if spot.Current_Status == 'O')
+
+    fig2, ax2 = plt.subplots()
+    ax2.bar(['Available', 'Occupied'], [available_spots, occupied_spots], 
+            color=['lightgreen', 'salmon'])
+    ax2.set_title('Parking Spot Status')
+    ax2.set_ylabel('Number of Spots')
+    img2 = io.BytesIO()
+    fig2.tight_layout()
+    fig2.savefig(img2, format='png')
+    img2.seek(0)
+    plot_url2 = base64.b64encode(img2.getvalue()).decode()
+    plt.close(fig2)
+
+    lots = ParkingLot.query.all()
+    lot_names = [lot.Location_Name for lot in lots]
+    total_bookings = []
+    
+    for lot in lots:
+        booking_count = 0
+        for spot in lot.available_spots:
+            booking_count += len(spot.spot_reservations)
+        total_bookings.append(booking_count)
+
+    fig3, ax3 = plt.subplots()
+    ax3.bar(lot_names, total_bookings, color='gold')
+    ax3.set_title('Bookings by Location')
+    ax3.set_xlabel('Parking Locations')
+    ax3.set_ylabel('Total Bookings')
+    plt.xticks(rotation=45)
+    img3 = io.BytesIO()
+    fig3.tight_layout()
+    fig3.savefig(img3, format='png')
+    img3.seek(0)
+    plot_url3 = base64.b64encode(img3.getvalue()).decode()
+    plt.close(fig3)
+
+    return render_template('summary.html',
+                           plot_url1=plot_url1,
+                           plot_url2=plot_url2,
+                           plot_url3=plot_url3,
+                           user=current_user)
 
 
 
@@ -281,13 +591,24 @@ def book_spot(lot_id):
 
 
 
-def intialize_admin():
+
+def initialize_admin():
     with app.app_context():
-        if not VehicleUser.query.filter_by(Login_name='admin').first():
-            admin = VehicleUser(Login_name='admin',Full_Name="udghosh rao",Email_Address="133@gmail.com",User_Password='123f', Phone_Number='1234567890',Role='admin',Address=" Kolkata",Pin_Code="123456")
+        if not VehicleUser.query.filter_by(Role='admin').first():
+            admin = VehicleUser(
+                Login_name='admin',
+                Full_Name="Admin User",
+                Email_Address="admin@gmail.com",
+                User_Password='admin123',
+                Phone_Number='1234567890',
+                Role='admin',
+                Address="Admin Address",
+                Pin_Code="123456"
+            )
             db.session.add(admin)
             db.session.commit()
             print("Admin created successfully!")
+
 
 
 with app.app_context():
@@ -295,5 +616,5 @@ with app.app_context():
     # intialize_admin()
 
 if __name__=='__main__':
-    intialize_admin()
+    initialize_admin()
     app.run(debug=True)

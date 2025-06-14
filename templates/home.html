@@ -6,36 +6,51 @@
     <title>Welcome to Vehicle Parking</title>
     <style>
         body {
-            background-color: #27bf0f;
-            font-family: Arial, Georgia, 'Times New Roman', Times, serif;
+            background-color: #f0f4f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 320px;
+            width: 100%;
         }
         h1 {
-            color: #24527a;
+            margin-bottom: 24px;
+            color: #2c3e50;
+            font-weight: 700;
         }
         a {
-           display: inline-block;
-            background: #b3abb8;
-            color: #071fd2;
+            display: block;
+            margin: 12px 0;
+            padding: 14px 0;
+            background-color: #3498db;
+            color: white;
             text-decoration: none;
-            padding: 12px 28px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 1.1em;
-        
-          } 
-        a:hover {
-            background: #b3c7e6;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
         }
-        button {
-            background: #0bd36b;
-            color: #fff;
-            border: none;
-            }
+        a:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
-    <h1>Welcome to Vehicle Parking</h1>
-    <p><a href="/register">Register New Account</a></p>
-    <p><a href="/login">Login to Existing Account</a></p>
-    <p><a href="/admin_dashboard">Admin Dashboard</a></p>
+    <div class="container">
+        <h1>Welcome to Vehicle Parking</h1>
+        <a href="/user_register">Register New Account</a>
+        <a href="/user_login">Login to Existing Account</a>
+    </div>
 </body>
 </html>

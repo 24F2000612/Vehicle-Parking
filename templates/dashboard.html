@@ -4,90 +4,197 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .nav-bar { 
+            background: #e3f2fd; 
+            padding: 12px 0; 
+            border-radius: 0 0 16px 16px;
+            margin-bottom: 20px;
+        }
+        .nav-bar .nav-left { 
+            font-weight: 500; 
+            color: #1976d2; 
+        }
+        .nav-bar .nav-left a { 
+            color: #1976d2; 
+            text-decoration: none; 
+            margin: 0 5px;
+        }
+        .nav-bar .nav-right { 
+            color: #388e3c; 
+        }
+        .nav-bar .nav-right a { 
+            color: #388e3c; 
+            text-decoration: none; 
+        }
+        .dashboard-section { 
+            background: #fff; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 8px #e0e0e0; 
+            margin-bottom: 28px; 
+            padding: 20px; 
+        }
+        .section-title { 
+            color: #1a237e; 
+            margin-bottom: 18px; 
+            text-align: center;
+        }
+        .table th, .table td { 
+            vertical-align: middle; 
+        }
+        .btn-action { 
+            min-width: 80px; 
+        }
+        .badge-custom { 
+            font-size: 0.95em; 
+        }
+        .chart-area { 
+            background: #f8fafc; 
+            border-radius: 10px; 
+            padding: 24px; 
+            margin-bottom: 28px; 
+            text-align: center; 
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome {{ user.Full_Name }}!</h1>
-    <p><strong>Username:</strong> {{ user.Login_name }}</p>
-    <p><strong>Email:</strong> {{ user.Email_Address }}</p>
-    <p><strong>Phone:</strong> {{ user.Phone_Number }}</p>
-    <p><strong>Role:</strong> {{ user.Role }}</p>
+    <!-- Navigation Bar -->
+    <div class="nav-bar px-4 d-flex justify-content-between align-items-center">
+        <div class="nav-left">
+            Welcome to User | 
+            <a href="/dashboard">Home</a> | 
+            <a href="#summary">Summary</a> | 
+            <a href="/logout">Logout</a>
+        </div>
+        <div class="nav-right">
+            <a href="/profile">Edit Profile</a>
+        </div>
+    </div>
 
-    <h2>Available Parking Lots</h2>
-<ul>
-{% for lot in lots %}
-    <li>
-        <strong>{{ lot.Location_Name }}</strong> ({{ lot.Address_name }}) - ₹{{ lot.PRICE }}
-        <ul>
-            {% for spot in lot.availabe_spots %}
-                {% if spot.Current_Status == 'A' %}
-                    <li>
-                        Spot {{ spot.Spot_Id }}
-                        <form action="{{ url_for('reserve_spot', spot_id=spot.Spot_Id) }}" method="post" style="display:inline;">
-                            <input type="text" name="Vehicle_Number" placeholder="Vehicle Number" required>
-                            <button type="submit">Book</button>
-                        </form>
-                    </li>
-                {% endif %}
+    <div class="container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             {% endfor %}
-        </ul>
-    </li>
-{% endfor %}
-</ul>
+        {% endif %}
+        {% endwith %}
 
-<h2>Your Booked Spots</h2>
-<table>
-    <tr>
-        <th>Reservation ID</th>
-        <th>Spot ID</th>
-        <th>Vehicle Number</th>
-        <th>Entry Time</th>
-        <th>Exit Time</th>
-        <th>Total Cost</th>
-        <th>Action</th>
-    </tr>
-    {% for reservation in user.user_reservations %}
-    <tr>
-        <td>{{ reservation.Reservation_Id }}</td>
-        <td>{{ reservation.Spot_Id }}</td>
-        <td>{{ reservation.Vehicle_Number }}</td>
-        <td>{{ reservation.Entry_Time }}</td>
-        <td>{{ reservation.Exit_Time }}</td>
-        <td>
-            {% if reservation.Total_Cost %}₹{{ reservation.Total_Cost }}{% else %}-{% endif %}
-        </td>
-        <td>
-            {% if not reservation.Exit_Time %}
-            <form action="{{ url_for('release_spot', reservation_id=reservation.Reservation_Id) }}" method="POST" style="display:inline;">
-                <button type="submit">Release</button>
-            </form>
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-<h2>Recent Parking History</h2>
-<table>
-    <tr>
-        <th>ID</th><th>Location</th><th>Vehicle No</th><th>Timestamp</th><th>Action</th>
-    </tr>
-    {% for reservation in user.user_reservations[-5:] %}
-    <tr>
-        <td>{{ reservation.Reservation_Id }}</td>
-        <td>{{ reservation.allocated_spot.belong_to_lot.Location_Name }}</td>
-        <td>{{ reservation.Vehicle_Number }}</td>
-        <td>{{ reservation.Entry_Time.strftime('%d/%m/%Y %H:%M') if reservation.Entry_Time }}</td>
-        <td>
-            {% if not reservation.Exit_Time %}
-                <button class="release-btn">Release</button>
+        <!-- Recent Parking History -->
+        <div class="dashboard-section">
+            <h5 class="section-title">Recent parking history</h5>
+            {% if user.user_reservations %}
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Location</th>
+                        <th>Vehicle_no</th>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for res in user.user_reservations[-5:] %}
+                    <tr>
+                        <td>{{ res.Reservation_Id }}</td>
+                        <td>{{ res.allocated_spot.belong_to_lot.Location_Name }}</td>
+                        <td>{{ res.Vehicle_Number }}</td>
+                        <td>
+                            {% if res.Entry_Time %}
+                                {{ res.Entry_Time.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            {% if not res.Exit_Time %}
+                            <form action="{{ url_for('release_spot', reservation_id=res.Reservation_Id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-warning btn-sm btn-action">Release</button>
+                            </form>
+                            {% else %}
+                                <span class="badge bg-success badge-custom">Parked Out</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-                <span class="completed">Parked Out</span>
+            <p class="text-muted text-center">No recent activity found.</p>
             {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+        </div>
 
+        <!-- Search Parking Section -->
+        <div class="dashboard-section">
+            <form method="POST" class="row g-2">
+                <div class="col-md-8">
+                    <input type="text" name="search_location" class="form-control" 
+                           placeholder="Search parking @location/pin code" value="{{ search_query or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+        </div>
 
-    
+        <!-- Parking Lots @ Available Locations -->
+        <div class="dashboard-section">
+            <h5 class="section-title">Parking Lots @ Available Locations</h5>
+            {% if lots %}
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Address</th>
+                        <th>Availability</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lot in lots %}
+                    {% set available_count = lot.available_spots|selectattr('Current_Status', 'equalto', 'A')|list|length %}
+                    <tr>
+                        <td>{{ lot.id }}</td>
+                        <td>{{ lot.Location_Name }}, {{ lot.Address_name }}</td>
+                        <td>{{ available_count }}</td>
+                        <td>
+                            {% if available_count > 0 %}
+                                {% set first_spot = lot.available_spots|selectattr('Current_Status', 'equalto', 'A')|first %}
+                                {% if first_spot %}
+                                <form action="{{ url_for('reserve_spot', spot_id=first_spot.Spot_Id) }}" method="POST" class="d-flex">
+                                    <input type="text" name="Vehicle_Number" placeholder="Vehicle Number" 
+                                           required class="form-control form-control-sm me-2" style="max-width:140px;">
+                                    <button type="submit" class="btn btn-success btn-sm btn-action">Book</button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-danger">No spots available</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">No parking lots found for your search.</p>
+            {% endif %}
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-area" id="summary">
+            <h5 class="section-title">Summary</h5>
+            {% if chart_url %}
+                <img src="data:image/png;base64,{{ chart_url }}" alt="Your Parking Chart" style="max-width:500px; height:auto;">
+            {% else %}
+                <p class="text-muted">No chart data yet. Book some parking spots to see your usage statistics!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

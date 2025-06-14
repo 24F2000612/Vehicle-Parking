@@ -2,107 +2,310 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .parking-spot {
+            width: 40px;
+            height: 40px;
+            margin: 2px;
+            display: inline-block;
+            text-align: center;
+            line-height: 40px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+        .available { background-color: #28a745; }
+        .occupied { background-color: #dc3545; }
+    </style>
 </head>
 <body>
-    <h2>Welcome to Admin Dashboard</h2>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="bg-primary text-white p-3 mb-4">
+            <div class="d-flex justify-content-between">
+                <h3>Admin Dashboard - Welcome {{ user.Full_Name }}</h3>
+                <div>
+                    <a href="#users" class="text-white me-3">Users</a>
+                    <a href="#search" class="text-white me-3">Search</a>
+                    <a href="#summary" class="text-white me-3">Summary</a>
+                    <a href="{{ url_for('summary_charts') }}" class="text-white me-3">Charts</a>
+                    <a href="{{ url_for('logout') }}" class="text-white">Logout</a>
+                </div>
+            </div>
+        </div>
 
-    <h3>All Registered Users</h3>
-    <table>
-        <tr>
-            <th>User ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Role</th>
-        </tr>
-        {% for user in users %}
-        <tr>
-            <td>{{ user.User_id }}</td>
-            <td>{{ user.Login_name }}</td>
-            <td>{{ user.Full_Name }}</td>
-            <td>{{ user.Email_Address }}</td>
-            <td>{{ user.Phone_Number }}</td>
-            <td>{{ user.Role }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-    <h3>All Parking Spots</h3>
-<p><a href="{{ url_for('add_spot') }}">+ Add New Parking Spot</a></p>
-<table>
-    <tr>
-        <th>Spot ID</th><th>Status</th><th>Lot ID</th><th>Actions</th>
-    </tr>
-    {% for spot in spots %}
-    <tr>
-        <td>{{ spot.Spot_Id }}</td>
-        <td>
-            {% if spot.Current_Status == 'A' %}
-            Available
-             {% else %}
-             Occupied
-            {% endif %}
-        </td>
+        <!-- Parking Lots Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between">
+                <h5>Parking Lots Management</h5>
+                <a href="{{ url_for('add_lot') }}" class="btn btn-primary btn-sm">+ Add New Lot</a>
+            </div>
+            <div class="card-body">
+                {% if lots %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Location</th>
+                                <th>Address</th>
+                                <th>Price/Hour</th>
+                                <th>Occupied/Total</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lot in lots %}
+                            {% set occupied_count = lot.available_spots|selectattr('Current_Status', 'equalto', 'O')|list|length %}
+                            <tr>
+                                <td>{{ lot.id }}</td>
+                                <td>{{ lot.Location_Name }}</td>
+                                <td>{{ lot.Address_name }}</td>
+                                <td>₹{{ lot.PRICE }}</td>
+                                <td>{{ occupied_count }}/{{ lot.Maximum_Number_Spots }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_lot', lot_id=lot.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                                    <form action="{{ url_for('delete_lot', lot_id=lot.id) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center">No parking lots created yet.</p>
+                {% endif %}
+            </div>
+        </div>
 
-    
-            
+        <!-- Parking Spots Visual Display -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Parking Spots Visual Layout</h5>
+            </div>
+            <div class="card-body">
+                {% for lot in lots %}
+                <div class="mb-4">
+                    <h6>{{ lot.Location_Name }}</h6>
+                    <div class="mb-2">
+                        {% for spot in lot.available_spots %}
+                        {% if spot.Current_Status == 'O' %}
+                            <a href="{{ url_for('occupied_spot_details', spot_id=spot.Spot_Id) }}" 
+                               class="parking-spot occupied" target="_blank">
+                                {{ spot.Spot_Number }}
+                            </a>
+                        {% else %}
+                            <span class="parking-spot available">{{ spot.Spot_Number }}</span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">Click on red spots to view details</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
 
-        <td>{{ spot.Lot_Id }}</td>
-        <td>
-            <form action="{{ url_for('delete_spot', spot_id=spot.Spot_Id) }}" method="POST" style="display:inline;">
-                <button type="submit">Delete</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+        <!-- Search Section -->
+        <div class="card mb-4" id="search">
+            <div class="card-header">
+                <h5>Search Functionality</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="row g-2">
+                    <div class="col-md-3">
+                        <select name="search_type" class="form-control">
+                            <option value="location">Search by Location</option>
+                            <option value="user">Search by User</option>
+                            <option value="spot">Search by Spot ID</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="search_query" class="form-control" 
+                               placeholder="Enter search term..." value="{{ search_query or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
+        <!-- Users Table -->
+        <div class="card mb-4" id="users">
+            <div class="card-header">
+                <h5>Registered Users ({{ users|length }} total)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Email</th>
+                                <th>Full Name</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Role</th>
+                                <th>Total Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.User_id }}</td>
+                                <td>{{ user.Email_Address }}</td>
+                                <td>{{ user.Full_Name }}</td>
+                                <td>{{ user.Phone_Number }}</td>
+                                <td>{{ user.Address }}, {{ user.Pin_Code }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if user.Role == 'admin' else 'primary' }}">
+                                        {{ user.Role.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ user.user_reservations|length }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-    <h3>All Parking Lots</h3>
-<p><a href="{{ url_for('add_lot') }}">+ Add New Parking Lot</a></p>
-<table>
-    <tr>
-        <th>Lot ID</th><th>Location Name</th><th>Address</th><th>Price</th><th>Max Spots</th><th>Actions</th>
-    </tr>
-    {% for lot in lots %}
-    <tr>
-        <td>{{ lot.id }}</td>
-        <td>{{ lot.Location_Name }}</td>
-        <td>{{ lot.Address_name }}</td>
-        <td>{{ lot.PRICE }}</td>
-        <td>{{ lot.Maximum_Number_Spots }}</td>
-        <td>
-            <a href="{{ url_for('edit_lot', lot_id=lot.id) }}">Edit</a> |
-            <form action="{{ url_for('delete_lot', lot_id=lot.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this lot?');">
-                <button type="submit">Delete</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-<h3>All Reservations</h3>
-<table>
-    <tr>
-        <th>Reservation ID</th><th>User ID</th><th>Spot ID</th><th>Vehicle Number</th><th>Entry Time</th><th>Exit Time</th><th>Total Cost</th>
-    </tr>
-    {% for reservation in reservations %}
-    <tr>
-        <td>{{ reservation.Reservation_Id }}</td>
-        <td>{{ reservation.User_id }}</td>
-        <td>{{ reservation.Spot_Id }}</td>
-        <td>{{ reservation.Vehicle_Number }}</td>
-        <td>{{ reservation.Entry_Time }}</td>
-        <td>{{ reservation.Exit_Time }}</td>
-        <td>{{ reservation.Total_Cost }}</td>
-    </tr>
-    {% endfor %}
-</table>
-<h3>Summary</h3>
-<ul>
-    <li>Total Lots: {{ lots|length }}</li>
-    <li>Total Spots: {{ spots|length }}</li>
-    <li>Total Reservations: {{ reservations|length }}</li>
-    <li>Total Revenue: ₹{{ reservations|map(attribute='Total_Cost')|reject('none')|sum }}</li>
+        <!-- Parking History -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Recent Parking History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Location</th>
+                                <th>Vehicle Number</th>
+                                <th>Entry Time</th>
+                                <th>Exit Time</th>
+                                <th>Duration</th>
+                                <th>Cost</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in reservations[-10:] %}
+                            <tr>
+                                <td>{{ reservation.Reservation_Id }}</td>
+                                <td>{{ reservation.customer_booking.Full_Name }}</td>
+                                <td>{{ reservation.allocated_spot.belong_to_lot.Location_Name }}</td>
+                                <td>{{ reservation.Vehicle_Number }}</td>
+                                <td>
+                                    {% if reservation.Entry_Time %}
+                                        {{ reservation.Entry_Time.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if reservation.Exit_Time %}
+                                        {{ reservation.Exit_Time.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if reservation.Entry_Time and reservation.Exit_Time %}
+                                        {% set duration = (reservation.Exit_Time - reservation.Entry_Time).total_seconds() / 3600 %}
+                                        {{ "%.1f"|format(duration) }} hrs
+                                    {% else %}
+                                        Ongoing
+                                    {% endif %}
+                                </td>
+                                <td>₹{{ reservation.Total_Cost or 0 }}</td>
+                                <td>
+                                    {% if reservation.Exit_Time %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Active</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-</ul>
-
-    
+        <!-- Summary Section -->
+        <div class="card" id="summary">
+            <div class="card-header">
+                <h5>Dashboard Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="border p-3 rounded">
+                            <h4 class="text-primary">{{ users|length }}</h4>
+                            <small>Total Users</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border p-3 rounded">
+                            <h4 class="text-success">{{ lots|length }}</h4>
+                            <small>Parking Lots</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border p-3 rounded">
+                            <h4 class="text-info">{{ spots|length }}</h4>
+                            <small>Total Spots</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border p-3 rounded">
+                            <h4 class="text-warning">{{ spots|selectattr('Current_Status', 'equalto', 'A')|list|length }}</h4>
+                            <small>Available</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border p-3 rounded">
+                            <h4 class="text-danger">{{ spots|selectattr('Current_Status', 'equalto', 'O')|list|length }}</h4>
+                            <small>Occupied</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border p-3 rounded">
+                            {% set total_revenue = 0 %}
+                            {% for reservation in reservations %}
+                                {% if reservation.Total_Cost %}
+                                    {% set total_revenue = total_revenue + reservation.Total_Cost %}
+                                {% endif %}
+                            {% endfor %}
+                            <h4 class="text-dark">₹{{ total_revenue }}</h4>
+                            <small>Total Revenue</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

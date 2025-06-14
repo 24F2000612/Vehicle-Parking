@@ -20,13 +20,14 @@ class ParkingLot(db.Model):
     Address_name = db.Column(db.String , nullable = False)
     PRICE = db.Column(db.Integer , nullable = False)
     Maximum_Number_Spots = db.Column(db.Integer , nullable = False)
-    availabe_spots = db.relationship("ParkingSpot" , backref = "belong_to_lot" , cascade = "all, delete")
+    available_spots = db.relationship("ParkingSpot" , backref = "belong_to_lot" , cascade = "all, delete")
 
 class ParkingSpot(db.Model):
     __tablename__ = "ParkingSpot"
     Spot_Id = db.Column(db.Integer, primary_key=True)
     Current_Status = db.Column(db.String(1), nullable=False, default='A')  
     Lot_Id = db.Column(db.Integer , db.ForeignKey("ParkingLot.id") , nullable = False)
+    Spot_Number = db.Column(db.Integer, nullable=False)
     spot_reservations = db.relationship("ParkingReservation", backref="allocated_spot", cascade="all, delete")
 
 class ParkingReservation(db.Model):
@@ -38,5 +39,6 @@ class ParkingReservation(db.Model):
     Entry_Time = db.Column(db.DateTime, nullable=True)
     Exit_Time = db.Column(db.DateTime, nullable=True)
     Total_Cost = db.Column(db.Float, nullable=True)
+
  
     
