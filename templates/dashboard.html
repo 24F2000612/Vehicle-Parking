@@ -5,72 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .nav-bar { 
-            background: #e3f2fd; 
-            padding: 12px 0; 
-            border-radius: 0 0 16px 16px;
-            margin-bottom: 20px;
-        }
-        .nav-bar .nav-left { 
-            font-weight: 500; 
-            color: #1976d2; 
-        }
-        .nav-bar .nav-left a { 
-            color: #1976d2; 
-            text-decoration: none; 
-            margin: 0 5px;
-        }
-        .nav-bar .nav-right { 
-            color: #388e3c; 
-        }
-        .nav-bar .nav-right a { 
-            color: #388e3c; 
-            text-decoration: none; 
-        }
-        .dashboard-section { 
-            background: #fff; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px #e0e0e0; 
-            margin-bottom: 28px; 
-            padding: 20px; 
-        }
-        .section-title { 
-            color: #1a237e; 
-            margin-bottom: 18px; 
-            text-align: center;
-        }
-        .table th, .table td { 
-            vertical-align: middle; 
-        }
-        .btn-action { 
-            min-width: 80px; 
-        }
-        .badge-custom { 
-            font-size: 0.95em; 
-        }
-        .chart-area { 
-            background: #f8fafc; 
-            border-radius: 10px; 
-            padding: 24px; 
-            margin-bottom: 28px; 
-            text-align: center; 
-        }
-    </style>
 </head>
 <body>
     <!-- Navigation Bar -->
-    <div class="nav-bar px-4 d-flex justify-content-between align-items-center">
-        <div class="nav-left">
-            Welcome to User | 
-            <a href="/dashboard">Home</a> | 
-            <a href="#summary">Summary</a> | 
-            <a href="/logout">Logout</a>
-        </div>
-        <div class="nav-right">
-            <a href="/profile">Edit Profile</a>
-        </div>
-    </div>
+    <nav class="navbar navbar-expand navbar-light bg-light mb-3 px-4">
+        <span class="navbar-text fw-bold text-primary me-3">Welcome to User</span>
+        <a class="nav-link" href="/dashboard">Home</a>
+        <a class="nav-link" href="#summary">Summary</a>
+        <a class="nav-link" href="/logout">Logout</a>
+        <span class="ms-auto"><a class="nav-link text-success" href="/profile">Edit Profile</a></span>
+    </nav>
 
     <div class="container">
         <!-- Flash Messages -->
@@ -86,8 +30,8 @@
         {% endwith %}
 
         <!-- Recent Parking History -->
-        <div class="dashboard-section">
-            <h5 class="section-title">Recent parking history</h5>
+        <div class="mb-4">
+            <h5 class="text-center text-primary">Recent parking history</h5>
             {% if user.user_reservations %}
             <table class="table table-bordered table-hover">
                 <thead class="table-light">
@@ -113,10 +57,10 @@
                         <td>
                             {% if not res.Exit_Time %}
                             <form action="{{ url_for('release_spot', reservation_id=res.Reservation_Id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-warning btn-sm btn-action">Release</button>
+                                <button type="submit" class="btn btn-warning btn-sm">Release</button>
                             </form>
                             {% else %}
-                                <span class="badge bg-success badge-custom">Parked Out</span>
+                                <span class="badge bg-success">Parked Out</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -129,7 +73,7 @@
         </div>
 
         <!-- Search Parking Section -->
-        <div class="dashboard-section">
+        <div class="mb-4">
             <form method="POST" class="row g-2">
                 <div class="col-md-8">
                     <input type="text" name="search_location" class="form-control" 
@@ -142,8 +86,8 @@
         </div>
 
         <!-- Parking Lots @ Available Locations -->
-        <div class="dashboard-section">
-            <h5 class="section-title">Parking Lots @ Available Locations</h5>
+        <div class="mb-4">
+            <h5 class="text-center text-primary">Parking Lots @ Available Locations</h5>
             {% if lots %}
             <table class="table table-bordered table-hover">
                 <thead class="table-light">
@@ -168,7 +112,7 @@
                                 <form action="{{ url_for('reserve_spot', spot_id=first_spot.Spot_Id) }}" method="POST" class="d-flex">
                                     <input type="text" name="Vehicle_Number" placeholder="Vehicle Number" 
                                            required class="form-control form-control-sm me-2" style="max-width:140px;">
-                                    <button type="submit" class="btn btn-success btn-sm btn-action">Book</button>
+                                    <button type="submit" class="btn btn-success btn-sm">Book</button>
                                 </form>
                                 {% endif %}
                             {% else %}
@@ -185,8 +129,8 @@
         </div>
 
         <!-- Chart Section -->
-        <div class="chart-area" id="summary">
-            <h5 class="section-title">Summary</h5>
+        <div class="mb-4 text-center" id="summary">
+            <h5 class="text-primary">Summary</h5>
             {% if chart_url %}
                 <img src="data:image/png;base64,{{ chart_url }}" alt="Your Parking Chart" style="max-width:500px; height:auto;">
             {% else %}

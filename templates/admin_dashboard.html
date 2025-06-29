@@ -5,61 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Simple styling only -->
     <style>
-        .parking-spot {
-            width: 40px;
-            height: 40px;
-            margin: 2px;
-            display: inline-block;
-            text-align: center;
-            line-height: 40px;
-            border-radius: 5px;
-            font-weight: bold;
-            color: white;
-            text-decoration: none;
+        body { 
+            background-color: #f8f9fa; 
         }
-        .available { background-color: #28a745; }
-        .occupied { background-color: #dc3545; }
+        .main-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <!-- Header -->
-        <div class="bg-primary text-white p-3 mb-4">
-            <div class="d-flex justify-content-between">
-                <h3>Admin Dashboard - Welcome {{ user.Full_Name }}</h3>
-                <div>
-                    <a href="#users" class="text-white me-3">Users</a>
-                    <a href="#search" class="text-white me-3">Search</a>
-                    <a href="#summary" class="text-white me-3">Summary</a>
-                    <a href="{{ url_for('summary_charts') }}" class="text-white me-3">Charts</a>
-                    <a href="{{ url_for('logout') }}" class="text-white">Logout</a>
+        <nav class="navbar navbar-expand navbar-dark bg-primary mb-4">
+            <div class="container-fluid">
+                <span class="navbar-brand">Admin Dashboard - {{ user.Full_Name }}</span>
+                <div class="navbar-nav ms-auto">
+                    <a href="#users" class="nav-link text-white">Users</a>
+                    <a href="#search" class="nav-link text-white">Search</a>
+                    <a href="#summary" class="nav-link text-white">Summary</a>
+                    <a href="{{ url_for('summary_charts') }}" class="nav-link text-white">Charts</a>
+                    <a href="{{ url_for('logout') }}" class="nav-link text-white">Logout</a>
                 </div>
             </div>
-        </div>
+        </nav>
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
-                {{ message }}
-            </div>
-            {% endfor %}
-        {% endif %}
-        {% endwith %}
+        <!-- Main Content Container -->
+        <div class="main-content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} mt-2">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
 
-        <!-- Parking Lots Section -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between">
-                <h5>Parking Lots Management</h5>
-                <a href="{{ url_for('add_lot') }}" class="btn btn-primary btn-sm">+ Add New Lot</a>
-            </div>
-            <div class="card-body">
-                {% if lots %}
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
+            <!-- Parking Lots Section -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Parking Lots</h5>
+                    <a href="{{ url_for('add_lot') }}" class="btn btn-primary btn-sm">+ Add Lot</a>
+                </div>
+                <div class="card-body">
+                    {% if lots %}
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
                             <tr>
                                 <th>ID</th>
                                 <th>Location</th>
@@ -88,73 +86,68 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    {% else %}
+                    <p class="text-center">No parking lots created yet.</p>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p class="text-center">No parking lots created yet.</p>
-                {% endif %}
             </div>
-        </div>
 
-        <!-- Parking Spots Visual Display -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>Parking Spots Visual Layout</h5>
-            </div>
-            <div class="card-body">
-                {% for lot in lots %}
-                <div class="mb-4">
-                    <h6>{{ lot.Location_Name }}</h6>
-                    <div class="mb-2">
-                        {% for spot in lot.available_spots %}
-                        {% if spot.Current_Status == 'O' %}
-                            <a href="{{ url_for('occupied_spot_details', spot_id=spot.Spot_Id) }}" 
-                               class="parking-spot occupied" target="_blank">
-                                {{ spot.Spot_Number }}
-                            </a>
-                        {% else %}
-                            <span class="parking-spot available">{{ spot.Spot_Number }}</span>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    <small class="text-muted">Click on red spots to view details</small>
+            <!-- Parking Spots Visual -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Parking Spots Overview</h5>
                 </div>
-                {% endfor %}
+                <div class="card-body">
+                    {% for lot in lots %}
+                    <div class="mb-3">
+                        <strong>{{ lot.Location_Name }}</strong>
+                        <div>
+                            {% for spot in lot.available_spots %}
+                                {% if spot.Current_Status == 'O' %}
+                                    <span class="badge bg-danger me-1 mb-1">{{ spot.Spot_Number }}</span>
+                                {% else %}
+                                    <span class="badge bg-success me-1 mb-1">{{ spot.Spot_Number }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <small class="text-muted">Red = Occupied, Green = Available</small>
+                </div>
             </div>
-        </div>
 
-        <!-- Search Section -->
-        <div class="card mb-4" id="search">
-            <div class="card-header">
-                <h5>Search Functionality</h5>
+            <!-- Search Section (FIXED - REMOVED SPOT ID) -->
+            <div class="card mb-4" id="search">
+                <div class="card-header">
+                    <h5>Search</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="row g-2">
+                        <div class="col-md-3">
+                            <select name="search_type" class="form-select">
+                                <option value="location">By Location</option>
+                                <option value="user">By User</option>
+                                <!-- REMOVED: <option value="spot">By Spot ID</option> -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="search_query" class="form-control" 
+                                   placeholder="Enter search term..." value="{{ search_query or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100">Search</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" class="row g-2">
-                    <div class="col-md-3">
-                        <select name="search_type" class="form-control">
-                            <option value="location">Search by Location</option>
-                            <option value="user">Search by User</option>
-                            <option value="spot">Search by Spot ID</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <input type="text" name="search_query" class="form-control" 
-                               placeholder="Enter search term..." value="{{ search_query or '' }}">
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary">Search</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        <!-- Users Table -->
-        <div class="card mb-4" id="users">
-            <div class="card-header">
-                <h5>Registered Users ({{ users|length }} total)</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
+            <!-- Users Table -->
+            <div class="card mb-4" id="users">
+                <div class="card-header">
+                    <h5>Registered Users ({{ users|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped table-hover">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -163,7 +156,7 @@
                                 <th>Phone</th>
                                 <th>Address</th>
                                 <th>Role</th>
-                                <th>Total Bookings</th>
+                                <th>Bookings</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -186,22 +179,20 @@
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- Parking History -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>Recent Parking History</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
+            <!-- Parking History -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Recent Parking History</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped table-hover">
                         <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>User</th>
                                 <th>Location</th>
-                                <th>Vehicle Number</th>
+                                <th>Vehicle No</th>
                                 <th>Entry Time</th>
                                 <th>Exit Time</th>
                                 <th>Duration</th>
@@ -252,55 +243,49 @@
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- Summary Section -->
-        <div class="card" id="summary">
-            <div class="card-header">
-                <h5>Dashboard Summary</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-2">
-                        <div class="border p-3 rounded">
-                            <h4 class="text-primary">{{ users|length }}</h4>
-                            <small>Total Users</small>
+            <!-- Summary Section -->
+            <div class="card mb-4" id="summary">
+                <div class="card-header">
+                    <h5>Dashboard Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2">
+                            <div class="border p-3 rounded">
+                                <h4 class="text-primary">{{ users|length }}</h4>
+                                <small>Total Users</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="border p-3 rounded">
-                            <h4 class="text-success">{{ lots|length }}</h4>
-                            <small>Parking Lots</small>
+                        <div class="col-md-2">
+                            <div class="border p-3 rounded">
+                                <h4 class="text-success">{{ lots|length }}</h4>
+                                <small>Parking Lots</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="border p-3 rounded">
-                            <h4 class="text-info">{{ spots|length }}</h4>
-                            <small>Total Spots</small>
+                        <div class="col-md-2">
+                            <div class="border p-3 rounded">
+                                <h4 class="text-info">{{ spots|length }}</h4>
+                                <small>Total Spots</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="border p-3 rounded">
-                            <h4 class="text-warning">{{ spots|selectattr('Current_Status', 'equalto', 'A')|list|length }}</h4>
-                            <small>Available</small>
+                        <div class="col-md-2">
+                            <div class="border p-3 rounded">
+                                <h4 class="text-warning">{{ spots|selectattr('Current_Status', 'equalto', 'A')|list|length }}</h4>
+                                <small>Available</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="border p-3 rounded">
-                            <h4 class="text-danger">{{ spots|selectattr('Current_Status', 'equalto', 'O')|list|length }}</h4>
-                            <small>Occupied</small>
+                        <div class="col-md-2">
+                            <div class="border p-3 rounded">
+                                <h4 class="text-danger">{{ spots|selectattr('Current_Status', 'equalto', 'O')|list|length }}</h4>
+                                <small>Occupied</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="border p-3 rounded">
-                            {% set total_revenue = 0 %}
-                            {% for reservation in reservations %}
-                                {% if reservation.Total_Cost %}
-                                    {% set total_revenue = total_revenue + reservation.Total_Cost %}
-                                {% endif %}
-                            {% endfor %}
-                            <h4 class="text-dark">₹{{ total_revenue }}</h4>
-                            <small>Total Revenue</small>
+                        <div class="col-md-2">
+                            <div class="border p-3 rounded">
+                                <h4 class="text-dark">₹{{ total_revenue }}</h4>
+                                <small>Total Revenue</small>
+                            </div>
                         </div>
                     </div>
                 </div>

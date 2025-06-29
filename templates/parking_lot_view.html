@@ -3,24 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>{{ lot.Location_Name }} - Parking Layout</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Simple styling -->
+    <style>
+        body { 
+            background-color: #f5f5f5; 
+        }
+        .layout-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .parking-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 15px; 
+            margin: 20px 0;
+        }
+        .parking-spot { 
+            border: 2px solid #ccc; 
+            padding: 15px; 
+            text-align: center; 
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .available { 
+            background: #d4edda; 
+            border-color: #28a745;
+            color: #155724;
+        }
+        .occupied { 
+            background: #f8d7da; 
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-    <h3>{{ lot.Location_Name }} - Parking Layout</h3>
-<div class="parking-grid">
-    {% for spot in lot.available_spots %}
-    <div class="parking-spot {{ 'occupied' if spot.Current_Status == 'O' else 'available' }}">
-        {{ spot.Spot_Id }}
+<div class="container" style="max-width: 800px; margin-top: 40px;">
+    <div class="layout-container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h3 class="text-primary">{{ lot.Location_Name }}</h3>
+            <p class="text-muted">Parking Layout View</p>
+        </div>
+        
+        <!-- Stats Summary -->
+        <div class="row text-center mb-4">
+            <div class="col-md-4">
+                <div class="border p-3 rounded">
+                    <h4 class="text-info">{{ lot.available_spots|length }}</h4>
+                    <small>Total Spots</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border p-3 rounded">
+                    <h4 class="text-success">{{ lot.available_spots|selectattr('Current_Status', 'equalto', 'A')|list|length }}</h4>
+                    <small>Available</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border p-3 rounded">
+                    <h4 class="text-danger">{{ lot.available_spots|selectattr('Current_Status', 'equalto', 'O')|list|length }}</h4>
+                    <small>Occupied</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Parking Grid (PURE HTML+CSS ONLY) -->
+        <div class="parking-grid">
+            {% for spot in lot.available_spots %}
+            {% if spot.Current_Status == 'O' %}
+                <a href="{{ url_for('spot_details', spot_id=spot.Spot_Id) }}" 
+                   class="parking-spot occupied text-decoration-none">
+                    {{ spot.Spot_Number or spot.Spot_Id }}
+                </a>
+            {% else %}
+                <div class="parking-spot available">
+                    {{ spot.Spot_Number or spot.Spot_Id }}
+                </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box available"></div>
+                <span>Available</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box occupied"></div>
+                <span>Occupied (Click for details)</span>
+            </div>
+        </div>
+        
+        <!-- Back Button -->
+        <div class="text-center mt-4">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                Back to Dashboard
+            </a>
+        </div>
     </div>
-    {% endfor %}
 </div>
-
-<style>
-.parking-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-.parking-spot { border: 2px solid #ccc; padding: 10px; text-align: center; }
-.available { background: lightgreen; }
-.occupied { background: lightcoral; }
-</style>
-
 </body>
 </html>

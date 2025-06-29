@@ -1,9 +1,14 @@
-from flask import Flask , render_template , request , flash ,redirect , url_for , session 
-from models import db, VehicleUser, ParkingLot, ParkingSpot, ParkingReservation
-from datetime import datetime
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import io
 import base64
+from flask import Flask, render_template, request, flash, redirect, url_for, session
+from models import db, VehicleUser, ParkingLot, ParkingSpot, ParkingReservation
+from datetime import datetime
+from sqlalchemy import func
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vehicle_park.db'
@@ -149,6 +154,7 @@ def logout():
     flash('Logged out successfully', 'info')
     return redirect(url_for('home'))
 
+
 @app.route('/admin_dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
     # Check if user is logged in
@@ -169,10 +175,15 @@ def admin_dashboard():
     # Get all data
     users = VehicleUser.query.all()
     lots = ParkingLot.query.all()
-    spots = ParkingSpot.query.all()
+    spots = ParkingSpot.query.all()  # FIXED: Get ALL spots for correct count
     reservations = ParkingReservation.query.all()
     
-    # Apply search filter
+    # Calculate total revenue using SQLAlchemy
+    total_revenue = db.session.query(
+        func.coalesce(func.sum(ParkingReservation.Total_Cost), 0)
+    ).scalar()
+    
+    # Apply search filter (REMOVED SPOT SEARCH)
     if request.method == 'POST' and search_query:
         if search_type == 'location':
             lots = ParkingLot.query.filter(
@@ -182,12 +193,7 @@ def admin_dashboard():
             users = VehicleUser.query.filter(
                 VehicleUser.Full_Name.contains(search_query)
             ).all()
-        elif search_type == 'spot':
-            try:
-                spot_id = int(search_query)
-                spots = ParkingSpot.query.filter_by(Spot_Id=spot_id).all()
-            except ValueError:
-                flash('Invalid spot ID', 'danger')
+        # REMOVED: elif search_type == 'spot' section
     
     return render_template('admin_dashboard.html', 
                          user=current_user,
@@ -195,7 +201,8 @@ def admin_dashboard():
                          lots=lots, 
                          spots=spots, 
                          reservations=reservations,
-                         search_query=search_query)
+                         search_query=search_query,
+                         total_revenue=total_revenue)
 
 
 @app.route('/edit_lot/<int:lot_id>', methods=['GET', 'POST'])
@@ -579,6 +586,27 @@ def summary_charts():
                            user=current_user)
 
 
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'user_id' not in session:
+        flash('Please login first', 'warning')
+        return redirect(url_for('user_login'))
+    
+    user = VehicleUser.query.get(session['user_id'])
+    if request.method == 'POST':
+        # Update user details
+        user.Full_Name = request.form.get('Full_Name')
+        user.Email_Address = request.form.get('Email_Address')
+        user.Phone_Number = request.form.get('Phone_Number')
+        user.Address = request.form.get('Address')
+        user.Pin_Code = request.form.get('Pin_Code')
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('profile'))
+    return render_template('profile.html', user=user)
+
+
+
 
 
 
@@ -596,14 +624,14 @@ def initialize_admin():
     with app.app_context():
         if not VehicleUser.query.filter_by(Role='admin').first():
             admin = VehicleUser(
-                Login_name='admin',
-                Full_Name="Admin User",
-                Email_Address="admin@gmail.com",
-                User_Password='admin123',
-                Phone_Number='1234567890',
+                Login_name='Ughosh',
+                Full_Name="udghsh yadav",
+                Email_Address="yadav@gmail.com",
+                User_Password='12345',
+                Phone_Number='123456',
                 Role='admin',
-                Address="Admin Address",
-                Pin_Code="123456"
+                Address="USA",
+                Pin_Code="123"
             )
             db.session.add(admin)
             db.session.commit()
