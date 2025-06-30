@@ -4,82 +4,386 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Simple styling only -->
     <style>
-        body { 
-            background-color: #f8f9fa; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .main-content {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-top: 20px;
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
             padding: 20px;
+        }
+        
+        .header-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .admin-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0;
+        }
+        
+        .navigation-menu {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-item {
+            color: #34495e;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .content-wrapper {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .alert-message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #28a745;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
+        }
+        
+        .section-block {
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-title {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title h5 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .action-link {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .action-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .section-content {
+            padding: 25px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table-header {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .table-header th {
+            padding: 15px 12px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .table-row td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+        
+        .table-row:hover {
+            background: #f8f9fa;
+        }
+        
+        .btn-edit {
+            background: #ffc107;
+            color: #212529;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .inline-form {
+            display: inline;
+        }
+        
+        .spot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .spot-indicator {
+            padding: 8px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .spot-occupied {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .spot-available {
+            background: #51cf66;
+            color: white;
+        }
+        
+        .search-area {
+            display: grid;
+            grid-template-columns: 200px 1fr 150px;
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .form-input, .form-select {
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .search-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .badge-admin {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .badge-user {
+            background: #007bff;
+            color: white;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-top: 4px solid;
+        }
+        
+        .summary-card:nth-child(1) { border-color: #007bff; }
+        .summary-card:nth-child(2) { border-color: #28a745; }
+        .summary-card:nth-child(3) { border-color: #17a2b8; }
+        .summary-card:nth-child(4) { border-color: #ffc107; }
+        .summary-card:nth-child(5) { border-color: #dc3545; }
+        .summary-card:nth-child(6) { border-color: #343a40; }
+        
+        .summary-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .summary-label {
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #6c757d;
+            padding: 40px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .search-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .navigation-menu {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <!-- Header -->
-        <nav class="navbar navbar-expand navbar-dark bg-primary mb-4">
-            <div class="container-fluid">
-                <span class="navbar-brand">Admin Dashboard - {{ user.Full_Name }}</span>
-                <div class="navbar-nav ms-auto">
-                    <a href="#users" class="nav-link text-white">Users</a>
-                    <a href="#search" class="nav-link text-white">Search</a>
-                    <a href="#summary" class="nav-link text-white">Summary</a>
-                    <a href="{{ url_for('summary_charts') }}" class="nav-link text-white">Charts</a>
-                    <a href="{{ url_for('logout') }}" class="nav-link text-white">Logout</a>
-                </div>
+    <div class="dashboard-container">
+        <!-- Header Section -->
+        <header class="header-section">
+            <div class="header-content">
+                <h1 class="admin-title">Parking Control Panel - {{ user.Full_Name }}</h1>
+                <nav class="navigation-menu">
+                    <a href="#users" class="nav-item">Users</a>
+                    <a href="#search" class="nav-item">Search</a>
+                    <a href="#summary" class="nav-item">Summary</a>
+                    <a href="{{ url_for('summary_charts') }}" class="nav-item">Analytics</a>
+                    <a href="{{ url_for('logout') }}" class="nav-item">Exit System</a>
+                </nav>
             </div>
-        </nav>
+        </header>
 
-        <!-- Main Content Container -->
-        <div class="main-content">
+        <!-- Main Content -->
+        <main class="content-wrapper">
             <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=True) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} mt-2">
+                <div class="alert-message alert-{{ 'success' if category == 'success' else 'error' }}">
                     {{ message }}
                 </div>
                 {% endfor %}
             {% endif %}
             {% endwith %}
 
-            <!-- Parking Lots Section -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Parking Lots</h5>
-                    <a href="{{ url_for('add_lot') }}" class="btn btn-primary btn-sm">+ Add Lot</a>
+            <!-- Parking Areas Management -->
+            <section class="section-block">
+                <div class="section-title">
+                    <h5>Parking Area Management</h5>
+                    <a href="{{ url_for('add_lot') }}" class="action-link">+ Create New Area</a>
                 </div>
-                <div class="card-body">
+                <div class="section-content">
                     {% if lots %}
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-light">
+                    <table class="data-table">
+                        <thead class="table-header">
                             <tr>
                                 <th>ID</th>
                                 <th>Location</th>
                                 <th>Address</th>
                                 <th>Price/Hour</th>
                                 <th>Occupied/Total</th>
-                                <th>Actions</th>
+                                <th>Management</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for lot in lots %}
                             {% set occupied_count = lot.available_spots|selectattr('Current_Status', 'equalto', 'O')|list|length %}
-                            <tr>
+                            <tr class="table-row">
                                 <td>{{ lot.id }}</td>
                                 <td>{{ lot.Location_Name }}</td>
                                 <td>{{ lot.Address_name }}</td>
                                 <td>₹{{ lot.PRICE }}</td>
                                 <td>{{ occupied_count }}/{{ lot.Maximum_Number_Spots }}</td>
                                 <td>
-                                    <a href="{{ url_for('edit_lot', lot_id=lot.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                                    <form action="{{ url_for('delete_lot', lot_id=lot.id) }}" method="POST" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    <a href="{{ url_for('edit_lot', lot_id=lot.id) }}" class="btn-edit">Modify</a>
+                                    <form action="{{ url_for('delete_lot', lot_id=lot.id) }}" method="POST" class="inline-form">
+                                        <button type="submit" class="btn-delete">Remove</button>
                                     </form>
                                 </td>
                             </tr>
@@ -87,68 +391,59 @@
                         </tbody>
                     </table>
                     {% else %}
-                    <p class="text-center">No parking lots created yet.</p>
+                    <div class="no-data">No parking areas created yet.</div>
                     {% endif %}
                 </div>
-            </div>
+            </section>
 
-            <!-- Parking Spots Visual -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Parking Spots Overview</h5>
+            <!-- Spot Status Visualization -->
+            <section class="section-block">
+                <div class="section-title">
+                    <h5>Real-Time Spot Status</h5>
                 </div>
-                <div class="card-body">
+                <div class="section-content">
                     {% for lot in lots %}
-                    <div class="mb-3">
-                        <strong>{{ lot.Location_Name }}</strong>
-                        <div>
+                    <div style="margin-bottom: 25px;">
+                        <strong style="color: #495057; font-size: 16px;">{{ lot.Location_Name }}</strong>
+                        <div class="spot-grid">
                             {% for spot in lot.available_spots %}
-                                {% if spot.Current_Status == 'O' %}
-                                    <span class="badge bg-danger me-1 mb-1">{{ spot.Spot_Number }}</span>
-                                {% else %}
-                                    <span class="badge bg-success me-1 mb-1">{{ spot.Spot_Number }}</span>
-                                {% endif %}
+                                <div class="spot-indicator {{ 'spot-occupied' if spot.Current_Status == 'O' else 'spot-available' }}">
+                                    {{ spot.Spot_Number }}
+                                </div>
                             {% endfor %}
                         </div>
                     </div>
                     {% endfor %}
-                    <small class="text-muted">Red = Occupied, Green = Available</small>
+                    <small style="color: #6c757d;">Red = Occupied, Green = Available</small>
                 </div>
-            </div>
+            </section>
 
-            <!-- Search Section (FIXED - REMOVED SPOT ID) -->
-            <div class="card mb-4" id="search">
-                <div class="card-header">
-                    <h5>Search</h5>
+            <!-- Search Interface -->
+            <section class="section-block" id="search">
+                <div class="section-title">
+                    <h5>Search System</h5>
                 </div>
-                <div class="card-body">
-                    <form method="POST" class="row g-2">
-                        <div class="col-md-3">
-                            <select name="search_type" class="form-select">
-                                <option value="location">By Location</option>
-                                <option value="user">By User</option>
-                                <!-- REMOVED: <option value="spot">By Spot ID</option> -->
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <input type="text" name="search_query" class="form-control" 
-                                   placeholder="Enter search term..." value="{{ search_query or '' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary w-100">Search</button>
-                        </div>
+                <div class="section-content">
+                    <form method="POST" class="search-area">
+                        <select name="search_type" class="form-select">
+                            <option value="location">By Location</option>
+                            <option value="user">By User</option>
+                        </select>
+                        <input type="text" name="search_query" class="form-input" 
+                               placeholder="Enter search term..." value="{{ search_query or '' }}">
+                        <button type="submit" class="search-button">Search</button>
                     </form>
                 </div>
-            </div>
+            </section>
 
-            <!-- Users Table -->
-            <div class="card mb-4" id="users">
-                <div class="card-header">
+            <!-- User Management -->
+            <section class="section-block" id="users">
+                <div class="section-title">
                     <h5>Registered Users ({{ users|length }})</h5>
                 </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover">
-                        <thead>
+                <div class="section-content">
+                    <table class="data-table">
+                        <thead class="table-header">
                             <tr>
                                 <th>ID</th>
                                 <th>Email</th>
@@ -161,14 +456,14 @@
                         </thead>
                         <tbody>
                             {% for user in users %}
-                            <tr>
+                            <tr class="table-row">
                                 <td>{{ user.User_id }}</td>
                                 <td>{{ user.Email_Address }}</td>
                                 <td>{{ user.Full_Name }}</td>
                                 <td>{{ user.Phone_Number }}</td>
                                 <td>{{ user.Address }}, {{ user.Pin_Code }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'danger' if user.Role == 'admin' else 'primary' }}">
+                                    <span class="status-badge {{ 'badge-admin' if user.Role == 'admin' else 'badge-user' }}">
                                         {{ user.Role.title() }}
                                     </span>
                                 </td>
@@ -178,16 +473,16 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <!-- Parking History -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Recent Parking History</h5>
+            <!-- Booking History -->
+            <section class="section-block">
+                <div class="section-title">
+                    <h5>Recent Booking Activity</h5>
                 </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover">
-                        <thead>
+                <div class="section-content">
+                    <table class="data-table">
+                        <thead class="table-header">
                             <tr>
                                 <th>ID</th>
                                 <th>User</th>
@@ -202,7 +497,7 @@
                         </thead>
                         <tbody>
                             {% for reservation in reservations[-10:] %}
-                            <tr>
+                            <tr class="table-row">
                                 <td>{{ reservation.Reservation_Id }}</td>
                                 <td>{{ reservation.customer_booking.Full_Name }}</td>
                                 <td>{{ reservation.allocated_spot.belong_to_lot.Location_Name }}</td>
@@ -232,9 +527,9 @@
                                 <td>₹{{ reservation.Total_Cost or 0 }}</td>
                                 <td>
                                     {% if reservation.Exit_Time %}
-                                        <span class="badge bg-success">Completed</span>
+                                        <span class="status-badge badge-success">Completed</span>
                                     {% else %}
-                                        <span class="badge bg-warning">Active</span>
+                                        <span class="status-badge badge-warning">Active</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -242,55 +537,43 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <!-- Summary Section -->
-            <div class="card mb-4" id="summary">
-                <div class="card-header">
-                    <h5>Dashboard Summary</h5>
+            <!-- System Summary -->
+            <section class="section-block" id="summary">
+                <div class="section-title">
+                    <h5>System Analytics Overview</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-2">
-                            <div class="border p-3 rounded">
-                                <h4 class="text-primary">{{ users|length }}</h4>
-                                <small>Total Users</small>
-                            </div>
+                <div class="section-content">
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-number">{{ users|length }}</div>
+                            <div class="summary-label">Total Users</div>
                         </div>
-                        <div class="col-md-2">
-                            <div class="border p-3 rounded">
-                                <h4 class="text-success">{{ lots|length }}</h4>
-                                <small>Parking Lots</small>
-                            </div>
+                        <div class="summary-card">
+                            <div class="summary-number">{{ lots|length }}</div>
+                            <div class="summary-label">Parking Areas</div>
                         </div>
-                        <div class="col-md-2">
-                            <div class="border p-3 rounded">
-                                <h4 class="text-info">{{ spots|length }}</h4>
-                                <small>Total Spots</small>
-                            </div>
+                        <div class="summary-card">
+                            <div class="summary-number">{{ spots|length }}</div>
+                            <div class="summary-label">Total Spots</div>
                         </div>
-                        <div class="col-md-2">
-                            <div class="border p-3 rounded">
-                                <h4 class="text-warning">{{ spots|selectattr('Current_Status', 'equalto', 'A')|list|length }}</h4>
-                                <small>Available</small>
-                            </div>
+                        <div class="summary-card">
+                            <div class="summary-number">{{ spots|selectattr('Current_Status', 'equalto', 'A')|list|length }}</div>
+                            <div class="summary-label">Available</div>
                         </div>
-                        <div class="col-md-2">
-                            <div class="border p-3 rounded">
-                                <h4 class="text-danger">{{ spots|selectattr('Current_Status', 'equalto', 'O')|list|length }}</h4>
-                                <small>Occupied</small>
-                            </div>
+                        <div class="summary-card">
+                            <div class="summary-number">{{ spots|selectattr('Current_Status', 'equalto', 'O')|list|length }}</div>
+                            <div class="summary-label">Occupied</div>
                         </div>
-                        <div class="col-md-2">
-                            <div class="border p-3 rounded">
-                                <h4 class="text-dark">₹{{ total_revenue }}</h4>
-                                <small>Total Revenue</small>
-                            </div>
+                        <div class="summary-card">
+                            <div class="summary-number">₹{{ total_revenue }}</div>
+                            <div class="summary-label">Total Revenue</div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 </body>
 </html>
