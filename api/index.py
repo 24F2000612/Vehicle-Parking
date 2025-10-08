@@ -1,4 +1,3 @@
-
 import matplotlib
 matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
@@ -26,13 +25,12 @@ def user_register():
     if request.method == 'POST':
         Login_name = request.form['Login_name']
         Full_Name = request.form['Full_Name']
-        Email_Address = request.form['Email_Address']  # Make sure this field exists
-        Phone_Number = request.form['Phone_Number']    # Make sure this field exists
+        Email_Address = request.form['Email_Address']
+        Phone_Number = request.form['Phone_Number']
         User_Password = request.form['User_Password']
         Address = request.form['Address']
         Pin_Code = request.form['Pin_Code']
 
-        # Check if user already exists
         existing_user = VehicleUser.query.filter_by(Email_Address=Email_Address).first()
         if existing_user:
             flash('Email already registered!', 'danger')
@@ -43,7 +41,7 @@ def user_register():
             Full_Name=Full_Name,
             Email_Address=Email_Address,
             Phone_Number=Phone_Number,
-            User_Password=User_Password,  # Simple password for now
+            User_Password=User_Password,
             Address=Address,
             Pin_Code=Pin_Code,
             Role='user'
@@ -68,19 +66,15 @@ def user_login():
         Email_Address = request.form['Email_Address']
         User_Password = request.form['User_Password']
 
-        # Find user by email
         user = VehicleUser.query.filter_by(Email_Address=Email_Address).first()
 
-        # Check if user exists and password matches
         if user and user.User_Password == User_Password:
-            # Store user info in session
             session['user_id'] = user.User_id
             session['user_role'] = user.Role
             session['user_name'] = user.Full_Name
             
             flash('Login successful!', 'success')
             
-            # Redirect based on role
             if user.Role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
@@ -116,7 +110,6 @@ def dashboard():
                 (ParkingLot.Address_name.ilike(f"%{search_query}%"))
             ).all()
 
-    # Generate chart for user
     reservations = user.user_reservations
     chart_url = None
     
@@ -158,33 +151,27 @@ def logout():
 
 @app.route('/admin_dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
-    # Check if user is logged in
     if 'user_id' not in session:
         flash('Please log in first', 'warning')
         return redirect(url_for('user_login'))
     
-    # Check if user is admin
     current_user = VehicleUser.query.get(session['user_id'])
     if not current_user or current_user.Role != 'admin':
         flash('Admin access required', 'danger')
         return redirect(url_for('user_login'))
     
-    # Handle search functionality
     search_query = request.form.get('search_query', '')
     search_type = request.form.get('search_type', 'location')
     
-    # Get all data
     users = VehicleUser.query.all()
     lots = ParkingLot.query.all()
-    spots = ParkingSpot.query.all()  # FIXED: Get ALL spots for correct count
+    spots = ParkingSpot.query.all()
     reservations = ParkingReservation.query.all()
     
-    # Calculate total revenue using SQLAlchemy
     total_revenue = db.session.query(
         func.coalesce(func.sum(ParkingReservation.Total_Cost), 0)
     ).scalar()
     
-    # Apply search filter (REMOVED SPOT SEARCH)
     if request.method == 'POST' and search_query:
         if search_type == 'location':
             lots = ParkingLot.query.filter(
@@ -194,7 +181,6 @@ def admin_dashboard():
             users = VehicleUser.query.filter(
                 VehicleUser.Full_Name.contains(search_query)
             ).all()
-        # REMOVED: elif search_type == 'spot' section
     
     return render_template('admin_dashboard.html', 
                          user=current_user,
@@ -410,14 +396,13 @@ def add_spot():
                 flash("Invalid parking lot selected", "danger")
                 return render_template('add_spot.html', lots=lots)
             
-            # Get next spot number
             existing_spots = ParkingSpot.query.filter_by(Lot_Id=Lot_Id).count()
             next_spot_number = existing_spots + 1
             
             new_spot = ParkingSpot(
                 Lot_Id=Lot_Id, 
                 Current_Status='A',
-                Spot_Number=next_spot_number  # Add this missing field
+                Spot_Number=next_spot_number
             )
             db.session.add(new_spot)
             db.session.commit()
@@ -443,12 +428,10 @@ def delete_spot(spot_id):
         flash("Admin access required", "danger")
         return redirect(url_for('user_login'))
     
-    # Professor's requirement: Only delete if spot is empty
     if spot.Current_Status == 'O':
         flash("Cannot delete occupied spot", "warning")
         return redirect(url_for('admin_dashboard'))
     
-    # Check for active reservations
     active_reservations = ParkingReservation.query.filter_by(
         Spot_Id=spot_id, Exit_Time=None
     ).count()
@@ -473,16 +456,14 @@ def delete_spot(spot_id):
 def release_spot(reservation_id):
     reservation = ParkingReservation.query.get_or_404(reservation_id)
     spot = ParkingSpot.query.get(reservation.Spot_Id)
-    reservation.Exit_Time = datetime.now()  # <-- Add this
+    reservation.Exit_Time = datetime.now()
 
-    # Calculate duration and cost
-    # Calculate duration and cost
-    entry = reservation.Entry_Time  # Already a datetime object
-    exit = reservation.Exit_Time    # Already a datetime object
+    entry = reservation.Entry_Time
+    exit = reservation.Exit_Time
     duration_hours = max(1, int((exit - entry).total_seconds() // 3600))
 
     lot = ParkingLot.query.get(spot.Lot_Id)
-    reservation.Total_Cost = duration_hours * lot.PRICE  # <-- Add this
+    reservation.Total_Cost = duration_hours * lot.PRICE
     spot.Current_Status = 'A'
     db.session.commit()
     flash('Spot released!', 'success')
@@ -595,7 +576,6 @@ def profile():
     
     user = VehicleUser.query.get(session['user_id'])
     if request.method == 'POST':
-        # Update user details
         user.Full_Name = request.form.get('Full_Name')
         user.Email_Address = request.form.get('Email_Address')
         user.Phone_Number = request.form.get('Phone_Number')
@@ -607,43 +587,6 @@ def profile():
     return render_template('profile.html', user=user)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def initialize_admin():
-    with app.app_context():
-        if not VehicleUser.query.filter_by(Role='admin').first():
-            admin = VehicleUser(
-                Login_name='Ughosh',
-                Full_Name="udghsh yadav",
-                Email_Address="yadav@gmail.com",
-                User_Password='12345',
-                Phone_Number='123456',
-                Role='admin',
-                Address="USA",
-                Pin_Code="123"
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin created successfully!")
-
-
-
+# Initialize database tables
 with app.app_context():
     db.create_all()
-    # intialize_admin()
-
-if __name__=='__main__':
-    initialize_admin()
-    app.run(debug=True)
