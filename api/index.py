@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 from flask import Flask, render_template, request, flash, redirect, url_for, session
-from models import db, VehicleUser, ParkingLot, ParkingSpot, ParkingReservation
+from api.models import db, VehicleUser, ParkingLot, ParkingSpot, ParkingReservation
 from datetime import datetime
 from sqlalchemy import func
 
